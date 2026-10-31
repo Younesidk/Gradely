@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.Repositories;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -150,7 +151,18 @@ services.AddHttpClient<IEmailService, ResendEmailService>(c =>
 
 services.AddRazorComponents().AddInteractiveServerComponents();
 
+// Behind a TLS-terminating proxy (Cloudflare tunnel, Dokploy) the app only sees http; trust X-Forwarded-* so
+// IsHttps, secure cookies and antiforgery work. The container is only reachable through that proxy.
+services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    o.KnownIPNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 await DatabaseInitializer.MigrateAsync(app.Services);
 await AdminBootstrapper.RunAsync(app.Services, app.Configuration, app.Logger);
