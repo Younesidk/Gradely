@@ -163,6 +163,15 @@ services.Configure<ForwardedHeadersOptions>(o =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+// Cloudflare tunnels do not send X-Forwarded-Proto; they send Cf-Visitor: {"scheme":"https"}. When secure cookies are
+// required the deployment is HTTPS-only, so treat requests as HTTPS either way.
+app.Use((ctx, next) =>
+{
+    if (cookieSecurePolicy == CookieSecurePolicy.Always
+        || ctx.Request.Headers["Cf-Visitor"].ToString().Contains("\"scheme\":\"https\"", StringComparison.OrdinalIgnoreCase))
+        ctx.Request.Scheme = "https";
+    return next();
+});
 
 await DatabaseInitializer.MigrateAsync(app.Services);
 await AdminBootstrapper.RunAsync(app.Services, app.Configuration, app.Logger);
