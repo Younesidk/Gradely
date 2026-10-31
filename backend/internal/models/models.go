@@ -30,6 +30,11 @@ type User struct {
 
 	Semesters []Semester `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Formulas  []Formula  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+
+	APIKeys     []APIKey           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	OAuthGrants []OAuthGrant       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	OAuthCodes  []OAuthCode        `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Events      []IntegrationEvent `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 // Session is a server-side login session. Only the SHA-256 of the cookie token is stored.
@@ -144,9 +149,122 @@ const (
 	SettingDefaultLabFormula = "DefaultLabFormula"
 )
 
+// ---------- developer integrations ----------
+
+// APIKey is a personal key for the MCP endpoint. Only the SHA-256 of the secret is stored; Prefix is the
+// non-secret start of the key, shown so people can tell their keys apart.
+type APIKey struct {
+	ID           string  `gorm:"primaryKey;size:36"`
+	UserID       string  `gorm:"size:36;not null;index"`
+	Name         string  `gorm:"size:80;not null"`
+	Description  *string `gorm:"size:300"`
+	Prefix       string  `gorm:"size:24;not null"`
+	KeyHash      string  `gorm:"size:64;not null;uniqueIndex"`
+	Scopes       string  `gorm:"size:400;not null"` // space-separated
+	RequestCount int64
+	CreatedAt    time.Time
+	LastUsedAt   *time.Time
+	ExpiresAt    *time.Time
+	RotatedAt    *time.Time
+	RevokedAt    *time.Time
+}
+
+// OAuthClient is an application registered through dynamic client registration (RFC 7591). Only public clients
+// (PKCE, no client secret) are supported.
+type OAuthClient struct {
+	ID           string `gorm:"primaryKey;size:64"` // the client_id
+	Name         string `gorm:"size:100;not null"`
+	RedirectURIs string `gorm:"size:2600;not null"` // newline-separated, compared exactly
+	CreatedAt    time.Time
+
+	Grants []OAuthGrant `gorm:"foreignKey:ClientID;constraint:OnDelete:CASCADE"`
+}
+
+// OAuthGrant is one user's authorisation of one client: a "connected application". Its tokens die with it.
+type OAuthGrant struct {
+	ID           string `gorm:"primaryKey;size:36"`
+	UserID       string `gorm:"size:36;not null;index"`
+	ClientID     string `gorm:"size:64;not null;index"`
+	Scopes       string `gorm:"size:400;not null"`
+	Resource     string `gorm:"size:300;not null"`
+	RequestCount int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	LastUsedAt   *time.Time
+	RevokedAt    *time.Time
+
+	Tokens []OAuthToken `gorm:"foreignKey:GrantID;constraint:OnDelete:CASCADE"`
+}
+
+// OAuthCode is a single-use authorization code (stored hashed) bound to its client, redirect URI and PKCE challenge.
+type OAuthCode struct {
+	CodeHash      string    `gorm:"primaryKey;size:64"`
+	UserID        string    `gorm:"size:36;not null;index"`
+	ClientID      string    `gorm:"size:64;not null"`
+	RedirectURI   string    `gorm:"size:500;not null"`
+	Scopes        string    `gorm:"size:400;not null"`
+	Resource      string    `gorm:"size:300;not null"`
+	CodeChallenge string    `gorm:"size:128;not null"`
+	ExpiresAt     time.Time `gorm:"not null;index"`
+	UsedAt        *time.Time
+	GrantID       *string `gorm:"size:36"` // the grant it produced, so a replayed code can revoke it
+}
+
+// OAuthToken is an access or refresh token (stored hashed).
+type OAuthToken struct {
+	TokenHash string     `gorm:"primaryKey;size:64"`
+	Kind      string     `gorm:"size:8;not null"` // "access" or "refresh"
+	GrantID   string     `gorm:"size:36;not null;index"`
+	UserID    string     `gorm:"size:36;not null;index"`
+	Scopes    string     `gorm:"size:400;not null"`
+	Resource  string     `gorm:"size:300;not null"`
+	ExpiresAt time.Time  `gorm:"not null;index"`
+	UsedAt    *time.Time // refresh tokens: when they were rotated (a second use revokes the grant)
+	CreatedAt time.Time
+}
+
+const (
+	TokenAccess  = "access"
+	TokenRefresh = "refresh"
+)
+
+// IntegrationEvent is one line of a user's integration activity log. It never holds secrets or academic values.
+type IntegrationEvent struct {
+	ID             uint64    `gorm:"primaryKey;autoIncrement"`
+	UserID         string    `gorm:"size:36;not null;index:idx_events_user_time,priority:1"`
+	CreatedAt      time.Time `gorm:"index:idx_events_user_time,priority:2;index"`
+	CredentialType string    `gorm:"size:16;not null"` // "api_key" or "oauth"
+	CredentialID   string    `gorm:"size:36;not null"`
+	CredentialName string    `gorm:"size:100;not null"`
+	Operation      string    `gorm:"size:64;not null"`
+	Category       string    `gorm:"size:16;not null"` // read, write, delete, limit
+	Success        bool
+	Status         int
+	ErrorCode      *string `gorm:"size:32"`
+	DurationMs     int64
+}
+
+// IdempotencyRecord remembers the result of a create call made with an idempotency key, so a retried call returns
+// the first result instead of creating a duplicate. Records expire after a day.
+type IdempotencyRecord struct {
+	CredentialID string `gorm:"primaryKey;size:36"`
+	Key          string `gorm:"primaryKey;size:100"`
+	Operation    string `gorm:"size:64;not null"`
+	Result       string `gorm:"size:20000"`
+	Pending      bool
+	CreatedAt    time.Time `gorm:"index"`
+}
+
 // All lists every entity for AutoMigrate.
 func All() []any {
-	return []any{&User{}, &Session{}, &Semester{}, &Module{}, &Formula{}, &Invitation{}, &EmailChange{}, &Setting{}}
+	return []any{&User{}, &Session{}, &Semester{}, &Module{}, &Formula{}, &Invitation{}, &EmailChange{}, &Setting{},
+		&APIKey{}, &OAuthClient{}, &OAuthGrant{}, &OAuthCode{}, &OAuthToken{}, &IntegrationEvent{}, &IdempotencyRecord{}}
+}
+
+// IntegrationTables lists the tables added for developer integrations, newest dependants first. Dropping them in
+// this order rolls the integrations schema back without touching academic data.
+func IntegrationTables() []any {
+	return []any{&IdempotencyRecord{}, &IntegrationEvent{}, &OAuthToken{}, &OAuthCode{}, &OAuthGrant{}, &OAuthClient{}, &APIKey{}}
 }
 
 // BeforeCreate fills in an ID when none was set.
@@ -177,6 +295,18 @@ func (f *Formula) BeforeCreate(*gorm.DB) error {
 func (i *Invitation) BeforeCreate(*gorm.DB) error {
 	if i.ID == "" {
 		i.ID = NewID()
+	}
+	return nil
+}
+func (k *APIKey) BeforeCreate(*gorm.DB) error {
+	if k.ID == "" {
+		k.ID = NewID()
+	}
+	return nil
+}
+func (g *OAuthGrant) BeforeCreate(*gorm.DB) error {
+	if g.ID == "" {
+		g.ID = NewID()
 	}
 	return nil
 }

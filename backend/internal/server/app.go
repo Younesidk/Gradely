@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,11 @@ type App struct {
 	limiter *rateLimiter
 	storage *storageCache
 	dummy   string // hash compared against when the account doesn't exist, to keep timing similar
+
+	mcpLimiter   *slidingLimiter // per credential and per user, on the MCP endpoint
+	authFailures *slidingLimiter // failed bearer tokens per client address
+	mcp          *mcpServers
+	eventCount   atomic.Uint64
 }
 
 // OpenDB opens (and migrates) the SQLite database at path.
@@ -57,9 +63,23 @@ func OpenDB(path string) (*gorm.DB, error) {
 
 // New builds the application.
 func New(cfg config.Config, db *gorm.DB, sender mail.Sender) *App {
+	if cfg.CredentialRateLimit <= 0 {
+		cfg.CredentialRateLimit = 100
+	}
+	if cfg.UserRateLimit <= 0 {
+		cfg.UserRateLimit = 150
+	}
+	if cfg.RateLimitWindow <= 0 {
+		cfg.RateLimitWindow = 5 * time.Minute
+	}
+	if cfg.ActivityRetention <= 0 {
+		cfg.ActivityRetention = 90 * 24 * time.Hour
+	}
 	a := &App{DB: db, Cfg: cfg, Mail: sender, Now: func() time.Time { return time.Now().UTC() }, BcryptCost: 12}
 	a.limiter = newRateLimiter(cfg.AuthRequestsPerMin, time.Minute)
 	a.storage = &storageCache{}
+	a.mcpLimiter = newSlidingLimiter(cfg.RateLimitWindow)
+	a.authFailures = newSlidingLimiter(time.Minute)
 	return a
 }
 
@@ -161,6 +181,44 @@ func (a *App) Router() *gin.Engine {
 	admin.POST("/invitations", a.createInvitation)
 	admin.POST("/invitations/:id/regenerate", a.regenerateInvitation)
 	admin.POST("/invitations/:id/revoke", a.revokeInvitation)
+
+	// Developer integrations: managed from the signed-in web app (session + X-Gradly header) ...
+	integ := user.Group("/integrations")
+	integ.GET("/meta", a.integrationsMeta)
+	integ.GET("/overview", a.integrationsOverview)
+	integ.GET("/keys", a.listAPIKeys)
+	integ.POST("/keys", a.createAPIKey)
+	integ.PUT("/keys/:id", a.updateAPIKey)
+	integ.POST("/keys/:id/rotate", a.rotateAPIKey)
+	integ.POST("/keys/:id/revoke", a.revokeAPIKey)
+	integ.DELETE("/keys/:id", a.deleteAPIKey)
+	integ.GET("/apps", a.listApps)
+	integ.POST("/apps/:id/revoke", a.revokeApp)
+	integ.DELETE("/apps/:id", a.deleteApp)
+	integ.GET("/activity", a.listActivity)
+	user.GET("/oauth/authorize", a.authorizeInfo)
+	user.POST("/oauth/authorize", a.authorizeDecision)
+
+	// ... and used by MCP clients: OAuth endpoints and the MCP endpoint itself (bearer tokens, no cookies).
+	for _, p := range []string{"/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"} {
+		r.GET(p, a.protectedResourceMetadata)
+		r.OPTIONS(p, a.oauthPreflight)
+	}
+	for _, p := range []string{"/.well-known/oauth-authorization-server", "/.well-known/oauth-authorization-server/mcp"} {
+		r.GET(p, a.authorizationServerMetadata)
+		r.OPTIONS(p, a.oauthPreflight)
+	}
+	oauth := r.Group("/oauth")
+	oauth.POST("/register", a.registerClient)
+	oauth.POST("/token", a.token)
+	oauth.POST("/revoke", a.revokeToken)
+	for _, p := range []string{"/register", "/token", "/revoke"} {
+		oauth.OPTIONS(p, a.oauthPreflight)
+	}
+	mcpEntry := a.mcpEntry(a.mcpHandler())
+	for _, m := range []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions} {
+		r.Handle(m, "/mcp", mcpEntry)
+	}
 
 	r.NoRoute(staticHandler())
 	return r

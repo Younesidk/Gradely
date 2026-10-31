@@ -450,6 +450,61 @@ select.input { appearance: auto; }
 .auth-foot { margin: var(--space-5) 0 0; text-align: center; }
 .auth-card .btn-block { margin-top: var(--space-2); }
 
+/* ---------- settings tabs & developer integrations ---------- */
+.tabs { display: flex; gap: var(--space-5); box-shadow: inset 0 -1px 0 var(--border); margin: calc(-1 * var(--space-2)) 0 var(--space-5); overflow-x: auto; overflow-y: hidden; }
+.tab { padding: var(--space-2) 0 var(--space-3); color: var(--muted); white-space: nowrap; }
+.tab:hover { color: var(--text); text-decoration: none; }
+.tab.active { color: var(--text); font-weight: 500; box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.subtabs { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-5); }
+.subtab {
+    display: inline-flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-3);
+    border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-2);
+    font: inherit; font-size: 13px; cursor: pointer; transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.subtab .icon { color: var(--muted); }
+.subtab:hover { background: var(--surface-2); color: var(--text); }
+.subtab.active { background: var(--surface); color: var(--text); font-weight: 500; border-color: var(--border); box-shadow: var(--shadow); }
+.subtab.active .icon { color: var(--primary); }
+.section-title-first { margin-top: 0; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; }
+.section-title p { margin: var(--space-1) 0 0; max-width: 640px; }
+.cell-title { display: flex; flex-direction: column; min-width: 0; }
+.cell-title strong { font-weight: 500; }
+.nowrap { white-space: nowrap; }
+.code-block { margin: 0 0 var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-2); border-radius: var(--radius-sm); overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 20px; }
+.code-block code { background: transparent; padding: 0; }
+.segmented { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; margin: var(--space-4) 0 var(--space-2); background: var(--surface-2); border-radius: var(--radius-sm); }
+.segmented button { height: 30px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
+.segmented button.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 0 0 1px var(--border); }
+.steps-tight { margin: var(--space-4) 0; gap: var(--space-3); }
+.preset-row { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-2); }
+.btn.is-active { border-color: var(--primary); color: var(--primary); }
+.fieldset-legend { font-size: 13px; font-weight: 500; padding: 0; }
+.scope-grid { display: grid; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.scope-head, .scope-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 72px; gap: var(--space-3); align-items: center; padding: var(--space-2) var(--space-3); }
+.scope-head { font-size: 12px; line-height: 16px; color: var(--muted); background: var(--surface-2); }
+.scope-row { border-top: 1px solid var(--border); }
+.scope-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.scope-what strong { font-weight: 500; }
+.scope-cell .check { font-size: 13px; }
+.scope-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* named for screen readers; the column header says it visually */
+.perm-explainer { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin: var(--space-4) 0; }
+.perm-explainer h3 { margin-bottom: var(--space-2); }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 220px)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.activity-list { list-style: none; margin: 0; padding: var(--space-2) var(--space-5); }
+.activity-list li { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; border-top: 1px solid var(--border); }
+.activity-list li:first-child { border-top: 0; }
+.activity-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-what strong { font-weight: 500; }
+.activity-when { width: 88px; text-align: right; flex: none; }
+.bar-fill-warn { background: var(--warn) !important; }
+.rl-note { margin: var(--space-3) 0 0; }
+.secret-reveal .link-box { margin-bottom: var(--space-1); }
+.auth-card-wide { max-width: 560px; }
+.consent-app { color: var(--primary); overflow-wrap: anywhere; }
+.consent-label { font-size: 13px; font-weight: 500; margin: var(--space-4) 0 var(--space-2); }
+.consent-warn { margin-top: var(--space-2); }
+.consent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-5); }
+
 /* ---------- Blazor chrome ---------- */
 #blazor-error-ui { display: none; position: fixed; z-index: 1000; bottom: 0; left: 0; right: 0; padding: var(--space-3) var(--space-5); background: var(--danger-soft); color: var(--danger); border-top: 1px solid var(--border); }
 #blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: var(--space-3); top: var(--space-2); }
@@ -496,6 +551,18 @@ select.input { appearance: auto; }
     .row-actions { justify-content: flex-end !important; flex-wrap: wrap; }
     .detail { padding-left: 0; }
     .grade-input { width: 88px; border-color: var(--border-strong); }
+
+    /* permissions become one stacked list with labelled checkboxes */
+    .scope-head { display: none; }
+    .scope-row { grid-template-columns: 1fr; gap: var(--space-2); }
+    .scope-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+    .scope-cell:empty, .scope-cell > .muted { display: none; }
+    .activity-list { padding: var(--space-1) var(--space-4); }
+    .activity-list li { flex-wrap: wrap; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; }
+    .activity-what { flex-basis: calc(100% - 24px); white-space: normal; }
+    .activity-when { width: auto; text-align: left; }
+    .filters { grid-template-columns: 1fr; }
+    .auth-card-wide { padding: var(--space-5); }
 }
 
 @media (prefers-reduced-motion: reduce) {

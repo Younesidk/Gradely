@@ -51,6 +51,22 @@ type formulaJSON struct {
 	ModulesUsing int    `json:"modulesUsing"`
 }
 
+// formulaUsage counts, per formula, how many of the user's modules use it.
+func (a *App) formulaUsage(userID string) map[string]int {
+	type usage struct {
+		FormulaID string
+		N         int
+	}
+	var rows []usage
+	a.DB.Model(&models.Module{}).Select("formula_id, COUNT(*) AS n").
+		Where("user_id = ? AND formula_id IS NOT NULL", userID).Group("formula_id").Scan(&rows)
+	counts := map[string]int{}
+	for _, r := range rows {
+		counts[r.FormulaID] = r.N
+	}
+	return counts
+}
+
 func (a *App) listFormulas(c *gin.Context) {
 	user := current(c)
 	formulas, err := a.userFormulas(user.ID)
@@ -58,17 +74,7 @@ func (a *App) listFormulas(c *gin.Context) {
 		fail(c, err)
 		return
 	}
-	type usage struct {
-		FormulaID string
-		N         int
-	}
-	var rows []usage
-	a.DB.Model(&models.Module{}).Select("formula_id, COUNT(*) AS n").
-		Where("user_id = ? AND formula_id IS NOT NULL", user.ID).Group("formula_id").Scan(&rows)
-	counts := map[string]int{}
-	for _, r := range rows {
-		counts[r.FormulaID] = r.N
-	}
+	counts := a.formulaUsage(user.ID)
 	out := make([]formulaJSON, 0, len(formulas))
 	for _, f := range formulas {
 		out = append(out, formulaJSON{f.ID, f.Name, f.Expression, f.ForLabExam, f.IsDefault, counts[f.ID]})
@@ -179,34 +185,27 @@ func (a *App) updateFormula(c *gin.Context) {
 	c.JSON(http.StatusOK, toFormulaJSON(*f))
 }
 
-func (a *App) setDefaultFormula(c *gin.Context) {
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
+func (a *App) setDefaultFormulaFor(userID, id string) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
 		var f models.Formula
-		if err := tx.Where("id = ? AND user_id = ?", c.Param("id"), user.ID).First(&f).Error; err != nil {
+		if err := tx.Where("id = ? AND user_id = ?", id, userID).First(&f).Error; err != nil {
 			return notFound("That formula")
 		}
-		if err := clearDefault(tx, user.ID, f.ForLabExam, f.ID); err != nil {
+		if err := clearDefault(tx, userID, f.ForLabExam, f.ID); err != nil {
 			return err
 		}
 		return tx.Model(&f).Update("is_default", true).Error
 	})
-	if err != nil {
-		fail(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func (a *App) deleteFormula(c *gin.Context) {
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
+func (a *App) deleteFormulaFor(userID, id string) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
 		var f models.Formula
-		if err := tx.Where("id = ? AND user_id = ?", c.Param("id"), user.ID).First(&f).Error; err != nil {
+		if err := tx.Where("id = ? AND user_id = ?", id, userID).First(&f).Error; err != nil {
 			return notFound("That formula")
 		}
 		var using int64
-		tx.Model(&models.Module{}).Where("formula_id = ? AND user_id = ?", f.ID, user.ID).Count(&using)
+		tx.Model(&models.Module{}).Where("formula_id = ? AND user_id = ?", f.ID, userID).Count(&using)
 		if using > 0 {
 			plural := "s"
 			if using == 1 {
@@ -216,7 +215,18 @@ func (a *App) deleteFormula(c *gin.Context) {
 		}
 		return tx.Delete(&f).Error
 	})
-	if err != nil {
+}
+
+func (a *App) setDefaultFormula(c *gin.Context) {
+	if err := a.setDefaultFormulaFor(current(c).ID, c.Param("id")); err != nil {
+		fail(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (a *App) deleteFormula(c *gin.Context) {
+	if err := a.deleteFormulaFor(current(c).ID, c.Param("id")); err != nil {
 		fail(c, err)
 		return
 	}

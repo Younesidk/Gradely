@@ -6,6 +6,7 @@
   import { navigate } from '../lib/router.svelte.js';
   import Icon from '../components/Icon.svelte';
   import Loading from '../components/Loading.svelte';
+  import SettingsTabs from '../components/SettingsTabs.svelte';
 
   let info = $state(null);
   let busy = $state(false);
@@ -75,6 +76,8 @@
     <p class="muted">Your sign-in details</p>
   </div>
 </div>
+
+<SettingsTabs />
 
 {#if info === null}
   <Loading />

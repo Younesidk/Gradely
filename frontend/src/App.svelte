@@ -18,14 +18,18 @@
   import SemesterDetail from './pages/SemesterDetail.svelte';
   import Formulas from './pages/Formulas.svelte';
   import AccountSettings from './pages/AccountSettings.svelte';
+  import DeveloperIntegrations from './pages/DeveloperIntegrations.svelte';
+  import OAuthAuthorize from './pages/OAuthAuthorize.svelte';
   import AdminOverview from './pages/AdminOverview.svelte';
   import AdminUsers from './pages/AdminUsers.svelte';
   import AdminUserDetail from './pages/AdminUserDetail.svelte';
   import AdminUserSemester from './pages/AdminUserSemester.svelte';
   import AdminInvitations from './pages/AdminInvitations.svelte';
 
-  // layout: 'auth' pages are public and centred; 'app' pages need a signed-in user; admin pages need an administrator.
+  // layout: 'auth' pages are public and centred; 'app' pages need a signed-in user; 'consent' pages are centred but
+  // need a signed-in user; admin pages need an administrator.
   const routes = [
+    { path: '/oauth/authorize', page: OAuthAuthorize, layout: 'consent' },
     { path: '/account/login', page: Login, layout: 'auth' },
     { path: '/account/register', page: Register, layout: 'auth' },
     { path: '/account/confirm-email-change', page: ConfirmEmailChange, layout: 'auth' },
@@ -34,6 +38,7 @@
     { path: '/semesters/:id', page: SemesterDetail, layout: 'app' },
     { path: '/formulas', page: Formulas, layout: 'app' },
     { path: '/settings', page: AccountSettings, layout: 'app' },
+    { path: '/settings/integrations', page: DeveloperIntegrations, layout: 'app' },
     { path: '/admin', page: AdminOverview, layout: 'app', admin: true },
     { path: '/admin/users', page: AdminUsers, layout: 'app', admin: true },
     { path: '/admin/users/:id', page: AdminUserDetail, layout: 'app', admin: true },
@@ -53,7 +58,7 @@
 
   // Signed-out visitors are sent to sign in (and back afterwards).
   $effect(() => {
-    if (auth.ready && !auth.user && current.layout === 'app') {
+    if (auth.ready && !auth.user && (current.layout === 'app' || current.layout === 'consent')) {
       navigate('/account/login?returnUrl=' + encodeURIComponent(route.path + location.search), { replace: true });
     }
   });
@@ -68,6 +73,13 @@
       <Page params={current.params} />
     {/key}
   </AuthLayout>
+{:else if current.layout === 'consent'}
+  {#if auth.user}
+    <AuthLayout wide>
+      {@const Page = current.page}
+      <Page params={current.params} />
+    </AuthLayout>
+  {/if}
 {:else if auth.user}
   {#if current.admin && !auth.user.isAdmin}
     <AuthLayout><AccessDenied /></AuthLayout>

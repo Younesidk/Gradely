@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -22,7 +23,17 @@ type Config struct {
 	AdminUsername     string
 	AdminPassword     string
 	DefaultLabFormula string
+
+	// Developer integrations (MCP endpoint). The credential limit applies to each API key and each OAuth
+	// connection; the user limit applies across all of a user's credentials together.
+	CredentialRateLimit int
+	UserRateLimit       int
+	RateLimitWindow     time.Duration
+	ActivityRetention   time.Duration
 }
+
+// MCPResource is the canonical URL of the MCP endpoint, which OAuth access tokens are bound to (RFC 8707).
+func (c Config) MCPResource() string { return c.BaseURL + "/mcp" }
 
 func (c Config) EmailConfigured() bool {
 	return strings.TrimSpace(c.ResendAPIKey) != "" && strings.TrimSpace(c.ResendFromEmail) != ""
@@ -58,7 +69,35 @@ func FromEnv() Config {
 		AdminUsername:       os.Getenv("ADMIN_USERNAME"),
 		AdminPassword:       os.Getenv("ADMIN_PASSWORD"),
 		DefaultLabFormula:   os.Getenv("DEFAULT_LAB_FORMULA"),
+		CredentialRateLimit: positiveInt("GRADLY_API_KEY_RATE_LIMIT", 100),
+		UserRateLimit:       positiveInt("GRADLY_USER_RATE_LIMIT", 150),
+		RateLimitWindow:     positiveDuration("GRADLY_RATE_LIMIT_WINDOW", 5*time.Minute),
+		ActivityRetention:   positiveDuration("GRADLY_ACTIVITY_RETENTION", 90*24*time.Hour),
 	}
+}
+
+func positiveInt(key string, fallback int) int {
+	v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key)))
+	if err != nil || v <= 0 {
+		return fallback
+	}
+	return v
+}
+
+// positiveDuration accepts Go durations ("5m", "90s") and plain days ("90d").
+func positiveDuration(key string, fallback time.Duration) time.Duration {
+	s := strings.TrimSpace(os.Getenv(key))
+	if days, ok := strings.CutSuffix(s, "d"); ok {
+		if n, err := strconv.Atoi(days); err == nil && n > 0 {
+			return time.Duration(n) * 24 * time.Hour
+		}
+		return fallback
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil || d <= 0 {
+		return fallback
+	}
+	return d
 }
 
 func env(key, fallback string) string {

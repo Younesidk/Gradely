@@ -313,33 +313,75 @@ func (a *App) ownedModule(tx *gorm.DB, userID, id string) (*models.Module, error
 	return &m, nil
 }
 
+// The ...For methods below are the academic service layer: they validate, authorise by userID and persist. The HTTP
+// handlers and the MCP tools both call them, so every client goes through the same rules.
+
+func (a *App) createSemesterFor(userID string, in semesterForm) (*models.Semester, error) {
+	start, end, err := validateSemester(&in)
+	if err != nil {
+		return nil, err
+	}
+	var s models.Semester
+	err = a.DB.Transaction(func(tx *gorm.DB) error {
+		var max *int
+		tx.Model(&models.Semester{}).Where("user_id = ?", userID).Select("MAX(sort_order)").Scan(&max)
+		next := 0
+		if max != nil {
+			next = *max + 1
+		}
+		now := a.now()
+		s = models.Semester{
+			UserID: userID, Name: strings.TrimSpace(in.Name), AcademicYear: clean(in.AcademicYear),
+			StartDate: start, EndDate: end, SortOrder: next, CreatedAt: now, UpdatedAt: now,
+		}
+		return tx.Create(&s).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (a *App) updateSemesterFor(userID, id string, in semesterForm) (*models.Semester, error) {
+	start, end, err := validateSemester(&in)
+	if err != nil {
+		return nil, err
+	}
+	s, err := a.ownedSemester(a.DB, userID, id)
+	if err != nil {
+		return nil, err
+	}
+	s.Name, s.AcademicYear, s.StartDate, s.EndDate, s.UpdatedAt = strings.TrimSpace(in.Name), clean(in.AcademicYear), start, end, a.now()
+	if err := a.DB.Save(s).Error; err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (a *App) deleteSemesterFor(userID, id string) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		s, err := a.ownedSemester(tx, userID, id)
+		if err != nil {
+			return err
+		}
+		if err := tx.Where("semester_id = ? AND user_id = ?", s.ID, userID).Delete(&models.Module{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(s).Error
+	})
+}
+
 func (a *App) createSemester(c *gin.Context) {
 	var in semesterForm
 	if !bind(c, &in) {
 		return
 	}
-	start, end, err := validateSemester(&in)
+	s, err := a.createSemesterFor(current(c).ID, in)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	user := current(c)
-	var max *int
-	a.DB.Model(&models.Semester{}).Where("user_id = ?", user.ID).Select("MAX(sort_order)").Scan(&max)
-	next := 0
-	if max != nil {
-		next = *max + 1
-	}
-	now := a.now()
-	s := models.Semester{
-		UserID: user.ID, Name: strings.TrimSpace(in.Name), AcademicYear: clean(in.AcademicYear),
-		StartDate: start, EndDate: end, SortOrder: next, CreatedAt: now, UpdatedAt: now,
-	}
-	if err := a.DB.Create(&s).Error; err != nil {
-		fail(c, err)
-		return
-	}
-	c.JSON(http.StatusCreated, toSemesterDTO(s))
+	c.JSON(http.StatusCreated, toSemesterDTO(*s))
 }
 
 func (a *App) updateSemester(c *gin.Context) {
@@ -347,18 +389,8 @@ func (a *App) updateSemester(c *gin.Context) {
 	if !bind(c, &in) {
 		return
 	}
-	start, end, err := validateSemester(&in)
+	s, err := a.updateSemesterFor(current(c).ID, c.Param("id"), in)
 	if err != nil {
-		fail(c, err)
-		return
-	}
-	s, err := a.ownedSemester(a.DB, current(c).ID, c.Param("id"))
-	if err != nil {
-		fail(c, err)
-		return
-	}
-	s.Name, s.AcademicYear, s.StartDate, s.EndDate, s.UpdatedAt = strings.TrimSpace(in.Name), clean(in.AcademicYear), start, end, a.now()
-	if err := a.DB.Save(s).Error; err != nil {
 		fail(c, err)
 		return
 	}
@@ -366,18 +398,7 @@ func (a *App) updateSemester(c *gin.Context) {
 }
 
 func (a *App) deleteSemester(c *gin.Context) {
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		s, err := a.ownedSemester(tx, user.ID, c.Param("id"))
-		if err != nil {
-			return err
-		}
-		if err := tx.Where("semester_id = ? AND user_id = ?", s.ID, user.ID).Delete(&models.Module{}).Error; err != nil {
-			return err
-		}
-		return tx.Delete(s).Error
-	})
-	if err != nil {
+	if err := a.deleteSemesterFor(current(c).ID, c.Param("id")); err != nil {
 		fail(c, err)
 		return
 	}
@@ -476,62 +497,49 @@ func resolveFormula(tx *gorm.DB, userID string, requested *string, hasLab bool) 
 	return &f.ID, nil
 }
 
-func (a *App) addModule(c *gin.Context) {
-	var in moduleForm
-	if !bind(c, &in) {
-		return
-	}
+func (a *App) addModuleFor(userID, semesterID string, in moduleForm) (*models.Module, error) {
 	if err := validateModule(&in); err != nil {
-		fail(c, err)
-		return
+		return nil, err
 	}
-	user := current(c)
 	var created models.Module
 	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		s, err := a.ownedSemester(tx, user.ID, c.Param("id"))
+		s, err := a.ownedSemester(tx, userID, semesterID)
 		if err != nil {
 			return err
 		}
 		var max *int
-		tx.Model(&models.Module{}).Where("semester_id = ? AND user_id = ?", s.ID, user.ID).Select("MAX(sort_order)").Scan(&max)
+		tx.Model(&models.Module{}).Where("semester_id = ? AND user_id = ?", s.ID, userID).Select("MAX(sort_order)").Scan(&max)
 		next := 0
 		if max != nil {
 			next = *max + 1
 		}
-		formulaID, err := resolveFormula(tx, user.ID, in.FormulaID, in.HasLabExam)
+		formulaID, err := resolveFormula(tx, userID, in.FormulaID, in.HasLabExam)
 		if err != nil {
 			return err
 		}
 		created = models.Module{
-			SemesterID: s.ID, UserID: user.ID, Name: strings.TrimSpace(in.Name), Code: clean(in.Code),
+			SemesterID: s.ID, UserID: userID, Name: strings.TrimSpace(in.Name), Code: clean(in.Code),
 			Coefficient: in.Coefficient, MaxGrade: in.MaxGrade, PassingThreshold: in.PassingThreshold,
 			HasLabExam: in.HasLabExam, FormulaID: formulaID, SortOrder: next, UpdatedAt: a.now(),
 		}
 		if err := tx.Create(&created).Error; err != nil {
 			return err
 		}
-		a.touchSemester(tx, user.ID, s.ID)
+		a.touchSemester(tx, userID, s.ID)
 		return nil
 	})
 	if err != nil {
-		fail(c, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, gin.H{"id": created.ID})
+	return &created, nil
 }
 
-func (a *App) updateModule(c *gin.Context) {
-	var in moduleForm
-	if !bind(c, &in) {
-		return
-	}
+func (a *App) updateModuleFor(userID, id string, in moduleForm) error {
 	if err := validateModule(&in); err != nil {
-		fail(c, err)
-		return
+		return err
 	}
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		m, err := a.ownedModule(tx, user.ID, c.Param("id"))
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		m, err := a.ownedModule(tx, userID, id)
 		if err != nil {
 			return err
 		}
@@ -542,7 +550,7 @@ func (a *App) updateModule(c *gin.Context) {
 		if err := validateGrades(in.MaxGrade, map[string]*float64{"CC1": m.CC1, "CC2": m.CC2, "Lab": lab, "Exam": m.ExamGrade}); err != nil {
 			return err
 		}
-		formulaID, err := resolveFormula(tx, user.ID, in.FormulaID, in.HasLabExam)
+		formulaID, err := resolveFormula(tx, userID, in.FormulaID, in.HasLabExam)
 		if err != nil {
 			return err
 		}
@@ -552,24 +560,21 @@ func (a *App) updateModule(c *gin.Context) {
 		if err := tx.Save(m).Error; err != nil {
 			return err
 		}
-		a.touchSemester(tx, user.ID, m.SemesterID)
+		a.touchSemester(tx, userID, m.SemesterID)
 		return nil
 	})
-	if err != nil {
-		fail(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func (a *App) updateGrades(c *gin.Context) {
-	var in gradesForm
-	if !bind(c, &in) {
-		return
-	}
-	user := current(c)
+// changeGrades loads the owned module, asks change for its complete new set of grades, validates and saves them in
+// one transaction. A full update and a single-assessment change both go through here.
+func (a *App) changeGrades(userID, id string, change func(m *models.Module) (gradesForm, error)) (*models.Module, error) {
+	var saved *models.Module
 	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		m, err := a.ownedModule(tx, user.ID, c.Param("id"))
+		m, err := a.ownedModule(tx, userID, id)
+		if err != nil {
+			return err
+		}
+		in, err := change(m)
 		if err != nil {
 			return err
 		}
@@ -588,10 +593,77 @@ func (a *App) updateGrades(c *gin.Context) {
 		if err := tx.Save(m).Error; err != nil {
 			return err
 		}
-		a.touchSemester(tx, user.ID, m.SemesterID)
+		a.touchSemester(tx, userID, m.SemesterID)
+		saved = m
 		return nil
 	})
+	return saved, err
+}
+
+func (a *App) setModuleFormulaFor(userID, id string, requested *string) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		m, err := a.ownedModule(tx, userID, id)
+		if err != nil {
+			return err
+		}
+		formulaID, err := resolveFormula(tx, userID, requested, m.HasLabExam)
+		if err != nil {
+			return err
+		}
+		m.FormulaID, m.UpdatedAt = formulaID, a.now()
+		if err := tx.Save(m).Error; err != nil {
+			return err
+		}
+		a.touchSemester(tx, userID, m.SemesterID)
+		return nil
+	})
+}
+
+func (a *App) deleteModuleFor(userID, id string) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		m, err := a.ownedModule(tx, userID, id)
+		if err != nil {
+			return err
+		}
+		if err := tx.Delete(m).Error; err != nil {
+			return err
+		}
+		a.touchSemester(tx, userID, m.SemesterID)
+		return nil
+	})
+}
+
+func (a *App) addModule(c *gin.Context) {
+	var in moduleForm
+	if !bind(c, &in) {
+		return
+	}
+	m, err := a.addModuleFor(current(c).ID, c.Param("id"), in)
 	if err != nil {
+		fail(c, err)
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"id": m.ID})
+}
+
+func (a *App) updateModule(c *gin.Context) {
+	var in moduleForm
+	if !bind(c, &in) {
+		return
+	}
+	if err := a.updateModuleFor(current(c).ID, c.Param("id"), in); err != nil {
+		fail(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (a *App) updateGrades(c *gin.Context) {
+	var in gradesForm
+	if !bind(c, &in) {
+		return
+	}
+	if _, err := a.changeGrades(current(c).ID, c.Param("id"), func(*models.Module) (gradesForm, error) { return in, nil }); err != nil {
 		fail(c, err)
 		return
 	}
@@ -605,24 +677,7 @@ func (a *App) setModuleFormula(c *gin.Context) {
 	if !bind(c, &in) {
 		return
 	}
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		m, err := a.ownedModule(tx, user.ID, c.Param("id"))
-		if err != nil {
-			return err
-		}
-		formulaID, err := resolveFormula(tx, user.ID, in.FormulaID, m.HasLabExam)
-		if err != nil {
-			return err
-		}
-		m.FormulaID, m.UpdatedAt = formulaID, a.now()
-		if err := tx.Save(m).Error; err != nil {
-			return err
-		}
-		a.touchSemester(tx, user.ID, m.SemesterID)
-		return nil
-	})
-	if err != nil {
+	if err := a.setModuleFormulaFor(current(c).ID, c.Param("id"), in.FormulaID); err != nil {
 		fail(c, err)
 		return
 	}
@@ -630,19 +685,7 @@ func (a *App) setModuleFormula(c *gin.Context) {
 }
 
 func (a *App) deleteModule(c *gin.Context) {
-	user := current(c)
-	err := a.DB.Transaction(func(tx *gorm.DB) error {
-		m, err := a.ownedModule(tx, user.ID, c.Param("id"))
-		if err != nil {
-			return err
-		}
-		if err := tx.Delete(m).Error; err != nil {
-			return err
-		}
-		a.touchSemester(tx, user.ID, m.SemesterID)
-		return nil
-	})
-	if err != nil {
+	if err := a.deleteModuleFor(current(c).ID, c.Param("id")); err != nil {
 		fail(c, err)
 		return
 	}
