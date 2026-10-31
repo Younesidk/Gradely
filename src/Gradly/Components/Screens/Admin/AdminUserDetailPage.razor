@@ -7,7 +7,7 @@
 
 @if (_notFound)
 {
-    <EmptyState Icon="🔎" Title="User not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>
+    <EmptyState Icon="search" Title="User not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>
 }
 else if (_detail is null)
 {
@@ -16,7 +16,7 @@ else if (_detail is null)
 else
 {
     var u = _detail.Row;
-    <a class="back-link" href="/admin/users">← All users</a>
+    <a class="back-link" href="/admin/users"><Icon Name="back" Size="16" />All users</a>
     <AdminBanner UserName="@u.UserName" />
 
     <div class="page-head">
@@ -55,7 +55,7 @@ else
     <div class="section-title"><h2>Academic records</h2></div>
     @if (_detail.Semesters.Count == 0)
     {
-        <EmptyState Icon="📚" Title="No semesters" Text="This user hasn't created any semesters yet." />
+        <EmptyState Icon="semesters" Title="No semesters" Text="This user hasn't created any semesters yet." />
     }
     else
     {

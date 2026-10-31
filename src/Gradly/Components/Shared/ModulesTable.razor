@@ -43,8 +43,9 @@
                         @if (v.Result.Grade is { } g)
                         {
                             <span class="final-wrap">
-                                <strong class="final @(v.Result.Passed == true ? "final-pass" : "final-fail")">@GradeFormat.Fixed2(g)</strong>
-                                <span class="muted small">/ @GradeFormat.Number(m.MaxGrade)</span>
+                                <PassLine Value="g" Max="m.MaxGrade" Threshold="m.PassingThreshold" Passed="v.Result.Passed" />
+                                <span><strong class="final @(v.Result.Passed == true ? "final-pass" : "final-fail")">@GradeFormat.Fixed2(g)</strong>
+                                <span class="muted small">/ @GradeFormat.Number(m.MaxGrade)</span></span>
                             </span>
                         }
                         else { <span class="muted">—</span> }
@@ -90,7 +91,7 @@
                                     <div class="callout callout-danger" role="alert">
                                         @(v.Result.Status == ModuleStatus.NoFormula
                                             ? (m.HasLabExam
-                                                ? "No lab formula is selected for this module. Create or pick one in Formula Settings."
+                                                ? "No lab formula is selected for this module. Create or pick one in Formula settings."
                                                 : "No formula is selected for this module.")
                                             : v.Result.FormulaError)
                                     </div>

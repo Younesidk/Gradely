@@ -1,0 +1,14 @@
+@* A grade on its scale, with a tick at the passing threshold. *@
+<span class="pass-line @(Wide ? "pass-line-wide" : "") @(Passed switch { true => "is-pass", false => "is-fail", _ => "" })"
+      role="img" aria-label="@($"{GradeFormat.Fixed2(Value)} of {GradeFormat.Number(Max)}, pass mark {GradeFormat.Number(Threshold)}")">
+    <span class="pass-line-fill" style="width: @UiFormat.Percent(Value, Max)"></span>
+    <span class="pass-line-tick" style="left: @UiFormat.Percent(Threshold, Max)"></span>
+</span>
+
+@code {
+    [Parameter, EditorRequired] public double Value { get; set; }
+    [Parameter, EditorRequired] public double Max { get; set; }
+    [Parameter, EditorRequired] public double Threshold { get; set; }
+    [Parameter] public bool? Passed { get; set; }
+    [Parameter] public bool Wide { get; set; }
+}

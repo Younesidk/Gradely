@@ -6,12 +6,12 @@
 @inject ConfirmService Confirm
 @inject IJSRuntime JS
 
-<PageTitle>Formula Settings · Gradly</PageTitle>
+<PageTitle>Formula settings · Gradly</PageTitle>
 
 <div class="page-head">
     <div>
-        <h1>Formula Settings</h1>
-        <p class="muted">Your grades, your rules. Define how a module grade is computed from CC1, CC2, Lab and Exam.</p>
+        <h1>Formula settings</h1>
+        <p class="muted">How a module grade is computed from CC1, CC2, lab and exam</p>
     </div>
     <div class="page-actions">
         @if (_form is null)
@@ -157,7 +157,7 @@ else
 
     @if (_formulas.Count == 0)
     {
-        <EmptyState Icon="ƒ" Title="No formulas yet" Text="Create a formula to compute module grades.">
+        <EmptyState Icon="formula" Title="No formulas yet" Text="Create a formula to compute module grades.">
             <button type="button" class="btn btn-primary" @onclick="() => StartNew(false)"><Icon Name="plus" Size="16" />New formula</button>
         </EmptyState>
     }
@@ -317,14 +317,14 @@ else
             return;
         }
         if (!await Confirm.ConfirmAsync($"Delete “{fv.Formula.Name}”?", "This formula will be permanently deleted.", "Delete formula")) return;
-        try { await FormulaSvc.DeleteAsync(fv.Formula.Id); Toasts.Success("Formula deleted."); }
+        try { await FormulaSvc.DeleteAsync(fv.Formula.Id); Toasts.Success("Formula deleted"); }
         catch (UserFacingException ex) { Toasts.Error(ex.Message); }
         await LoadAsync();
     }
 
     private async Task AddPlatformLab()
     {
-        try { await FormulaSvc.AddPlatformLabFormulaAsync(); Toasts.Success("Lab formula added."); }
+        try { await FormulaSvc.AddPlatformLabFormulaAsync(); Toasts.Success("Lab formula added"); }
         catch (UserFacingException ex) { Toasts.Error(ex.Message); }
         await LoadAsync();
     }

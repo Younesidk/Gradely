@@ -8,7 +8,7 @@
 <div class="page-head">
     <div>
         <h1>Semesters</h1>
-        <p class="muted">Each semester has its own modules, grades and weighted average.</p>
+        <p class="muted">Each semester has its own modules, grades and weighted average</p>
     </div>
     <div class="page-actions">
         <button type="button" class="btn btn-primary" @onclick="() => _dialog = new DialogState()"><Icon Name="plus" Size="16" />New semester</button>
@@ -21,7 +21,7 @@
 }
 else if (_semesters.Count == 0)
 {
-    <EmptyState Icon="📚" Title="No semesters yet" Text="Create your first semester, then add its modules and grades.">
+    <EmptyState Icon="semesters" Title="No semesters yet" Text="Create your first semester, then add its modules and grades.">
         <button type="button" class="btn btn-primary" @onclick="() => _dialog = new DialogState()"><Icon Name="plus" Size="16" />Create a semester</button>
     </EmptyState>
 }
@@ -84,7 +84,7 @@ else
         try
         {
             await Academic.DeleteSemesterAsync(s.Semester.Id);
-            Toasts.Success("Semester deleted.");
+            Toasts.Success("Semester deleted");
         }
         catch (UserFacingException ex) { Toasts.Error(ex.Message); }
         await LoadAsync();

@@ -1,5 +1,8 @@
 <div class="empty">
-    <div class="empty-icon" aria-hidden="true">@(Icon ?? "◌")</div>
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <div class="empty-icon" aria-hidden="true"><Gradly.Components.Shared.Icon Name="@Icon" Size="20" /></div>
+    }
     <h3 class="empty-title">@Title</h3>
     @if (!string.IsNullOrEmpty(Text))
     {
@@ -9,6 +12,7 @@
 </div>
 
 @code {
+    /// <summary>Name of an <see cref="Gradly.Components.Shared.Icon"/> glyph.</summary>
     [Parameter] public string? Icon { get; set; }
     [Parameter, EditorRequired] public string Title { get; set; } = "";
     [Parameter] public string? Text { get; set; }

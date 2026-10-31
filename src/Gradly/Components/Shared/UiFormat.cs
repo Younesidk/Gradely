@@ -36,4 +36,10 @@ public static class UiFormat
 
     public static string Average(SemesterSummary s) =>
         s.Average is null ? "—" : GradeFormat.Fixed2(s.Average);
+
+    /// <summary>A value's position on its scale as a CSS percentage ("62.5%"), clamped to 0–100.</summary>
+    public static string Percent(double value, double scale) =>
+        (scale <= 0 ? 0 : Math.Clamp(value / scale * 100, 0, 100)).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+
+    public static string Plural(int count, string noun) => $"{count} {noun}{(count == 1 ? "" : "s")}";
 }

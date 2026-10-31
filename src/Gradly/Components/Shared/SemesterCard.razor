@@ -12,13 +12,14 @@
             }
         </div>
     </div>
-    <div class="chip-row">
-        <span class="chip">@View.Summary.ModuleCount module@(View.Summary.ModuleCount == 1 ? "" : "s")</span>
-        @if (View.Summary.PassedCount > 0) { <span class="chip chip-success">@View.Summary.PassedCount passed</span> }
-        @if (View.Summary.FailedCount > 0) { <span class="chip chip-danger">@View.Summary.FailedCount failed</span> }
-        @if (View.Summary.IncompleteCount > 0) { <span class="chip chip-warn">@View.Summary.IncompleteCount incomplete</span> }
-        @if (View.Summary.IsProvisional && View.Summary.Average is not null) { <span class="chip chip-warn">provisional</span> }
-    </div>
+    @if (View.Summary.ModuleCount == 0)
+    {
+        <div class="split muted small">No modules yet</div>
+    }
+    else
+    {
+        <StatusSplit Summary="View.Summary" Compact="true" />
+    }
     @Actions
 </article>
 
@@ -31,12 +32,13 @@
     {
         get
         {
-            var parts = new List<string>();
+            var parts = new List<string> { UiFormat.Plural(View.Summary.ModuleCount, "module") };
             if (!string.IsNullOrWhiteSpace(View.Semester.AcademicYear)) parts.Add(View.Semester.AcademicYear!);
             if (View.Semester.StartDate is { } s && View.Semester.EndDate is { } e) parts.Add($"{UiFormat.Date(s)} – {UiFormat.Date(e)}");
             else if (View.Semester.StartDate is { } s2) parts.Add($"from {UiFormat.Date(s2)}");
             else if (View.Semester.EndDate is { } e2) parts.Add($"until {UiFormat.Date(e2)}");
-            return parts.Count == 0 ? "—" : string.Join(" · ", parts);
+            if (View.Summary.IsProvisional && View.Summary.Average is not null) parts.Add("provisional");
+            return string.Join(" · ", parts);
         }
     }
 }

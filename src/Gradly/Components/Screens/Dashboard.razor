@@ -1,6 +1,5 @@
 @page "/"
 @inject AcademicService Academic
-@inject AuthenticationStateProvider AuthState
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
@@ -14,8 +13,8 @@ else
 {
     <div class="page-head">
         <div>
-            <h1>Welcome back, @_name</h1>
-            <p class="muted">@(_data.Semesters.Count == 0 ? "Let's set up your first semester." : "Here's where your grades stand.")</p>
+            <h1>Dashboard</h1>
+            <p class="muted">@(_data.Semesters.Count == 0 ? "No semesters yet" : $"{UiFormat.Plural(_data.Semesters.Count, "semester")} · {UiFormat.Plural(_data.Overall.ModuleCount, "module")}")</p>
         </div>
         <div class="page-actions">
             <button type="button" class="btn btn-primary" @onclick="() => _showNew = true"><Icon Name="plus" Size="16" />New semester</button>
@@ -56,7 +55,7 @@ else
                 </div>
                 @if (cur.Modules.Count == 0)
                 {
-                    <p class="muted">No modules yet — add your first module to start tracking grades.</p>
+                    <p class="muted">No modules yet. Add one to start tracking grades.</p>
                 }
                 else
                 {
@@ -65,12 +64,16 @@ else
                         {
                             <li>
                                 <span class="mini-name">@m.Module.Name</span>
-                                <span class="mini-grade">@(m.Result.Grade is { } g ? GradeFormat.Fixed2(g) : "—")</span>
+                                @if (m.Result.Grade is { } g)
+                                {
+                                    <PassLine Value="g" Max="m.Module.MaxGrade" Threshold="m.Module.PassingThreshold" Passed="m.Result.Passed" />
+                                }
+                                <span class="mini-grade">@(m.Result.Grade is { } g2 ? GradeFormat.Fixed2(g2) : "—")</span>
                                 <StatusBadge Result="m.Result" />
                             </li>
                         }
                     </ul>
-                    @if (cur.Modules.Count > 8) { <p class="muted small">and @(cur.Modules.Count - 8) more…</p> }
+                    @if (cur.Modules.Count > 8) { <p class="muted small">@UiFormat.Plural(cur.Modules.Count - 8, "more module") in this semester</p> }
                 }
             </section>
         }
@@ -92,13 +95,10 @@ else
 
 @code {
     private DashboardData? _data;
-    private string _name = "";
     private bool _showNew;
 
     protected override async Task OnInitializedAsync()
     {
-        var state = await AuthState.GetAuthenticationStateAsync();
-        _name = state.User.Identity?.Name ?? "";
         try { _data = await Academic.GetDashboardAsync(); }
         catch (UserFacingException ex) { Toasts.Error(ex.Message); _data = AcademicReader.BuildDashboard([]); }
     }
