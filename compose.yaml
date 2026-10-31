@@ -1,0 +1,23 @@
+# Run with: docker compose up -d --build
+# Settings come from .env (copy .env.example). Values set under `environment` below override it.
+services:
+  gradly:
+    build: .
+    image: gradly:latest
+    container_name: gradly
+    restart: unless-stopped
+    ports:
+      - "${GRADLY_PORT:-8080}:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GRADLY_ADDR: ":8080"
+      GRADLY_DATA_DIR: /data
+      # Secure cookies need HTTPS. Set GRADLY_SECURE_COOKIES=false in .env to try it over plain http://localhost.
+      GRADLY_SECURE_COOKIES: ${GRADLY_SECURE_COOKIES:-true}
+    volumes:
+      - gradly-data:/data
+
+volumes:
+  gradly-data:
