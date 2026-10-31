@@ -21,7 +21,7 @@ async function request(method, path, body) {
     res = await fetch('/api' + path, {
       method,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-Gradely': '1' },
+      headers: { 'Content-Type': 'application/json', 'X-Gradly': '1' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {

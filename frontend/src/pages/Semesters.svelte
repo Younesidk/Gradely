@@ -44,7 +44,7 @@
   }
 </script>
 
-<svelte:head><title>Semesters · Gradely</title></svelte:head>
+<svelte:head><title>Semesters · Gradly</title></svelte:head>
 
 <div class="page-head">
   <div>

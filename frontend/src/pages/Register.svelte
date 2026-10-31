@@ -49,7 +49,7 @@
   }
 </script>
 
-<svelte:head><title>Create your account · Gradely</title></svelte:head>
+<svelte:head><title>Create your account · Gradly</title></svelte:head>
 
 {#if !loaded}
   <Loading />
@@ -60,7 +60,7 @@
   <a class="btn btn-ghost btn-block" href="/account/login">Go to sign in</a>
 {:else}
   <h1 class="auth-title">Create your account</h1>
-  <p class="muted auth-sub">You've been invited to Gradely. Choose a username and a password.</p>
+  <p class="muted auth-sub">You've been invited to Gradly. Choose a username and a password.</p>
   {#if error}<div class="alert alert-danger" role="alert">{error}</div>{/if}
 
   <form class="form" onsubmit={submit}>

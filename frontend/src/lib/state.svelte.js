@@ -78,7 +78,7 @@ export function toggleTheme() {
   const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   try {
-    localStorage.setItem('gradely-theme', next);
+    localStorage.setItem('gradly-theme', next);
   } catch {
     /* storage unavailable */
   }

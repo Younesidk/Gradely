@@ -1,4 +1,4 @@
-// Command gradely is the Gradely server: a Gin JSON API with GORM/SQLite storage that also serves the Svelte app.
+// Command gradly is the Gradly server: a Gin JSON API with GORM/SQLite storage that also serves the Svelte app.
 package main
 
 import (
@@ -47,7 +47,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("Gradely is listening", "addr", cfg.Addr)
+		slog.Info("Gradly is listening", "addr", cfg.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server stopped", "error", err)
 			os.Exit(1)

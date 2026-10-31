@@ -187,7 +187,7 @@ func (a *App) requireJSONHeader() gin.HandlerFunc {
 		switch c.Request.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions:
 		default:
-			if c.GetHeader("X-Gradely") != "1" {
+			if c.GetHeader("X-Gradly") != "1" {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request."})
 				return
 			}

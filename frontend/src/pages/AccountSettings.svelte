@@ -67,7 +67,7 @@
   };
 </script>
 
-<svelte:head><title>Account settings · Gradely</title></svelte:head>
+<svelte:head><title>Account settings · Gradly</title></svelte:head>
 
 <div class="page-head">
   <div>

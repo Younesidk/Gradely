@@ -43,7 +43,7 @@
   const top = $derived(data ? Math.max(1, ...data.largestUsers.map((u) => u.storageBytes)) : 1);
 </script>
 
-<svelte:head><title>Administration · Gradely</title></svelte:head>
+<svelte:head><title>Administration · Gradly</title></svelte:head>
 
 <div class="page-head">
   <div>
@@ -110,7 +110,7 @@
     <h2>Default lab formula</h2>
     <p class="muted small">
       Applied to <strong>new</strong> accounts as their starter formula for modules with a lab exam.
-      Gradely doesn't assume a lab weighting: leave this empty to make each student define their own.
+      Gradly doesn't assume a lab weighting: leave this empty to make each student define their own.
       Existing users can add it from Formula settings.
     </p>
     <form class="form" onsubmit={saveLab}>
