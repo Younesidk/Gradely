@@ -20,6 +20,10 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	cfg := config.FromEnv()
+	if err := cfg.Validate(); err != nil {
+		slog.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
 		slog.Error("cannot create the data directory", "dir", cfg.DataDir, "error", err)

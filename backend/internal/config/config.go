@@ -2,6 +2,9 @@
 package config
 
 import (
+	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,6 +37,61 @@ type Config struct {
 
 // MCPResource is the canonical URL of the MCP endpoint, which OAuth access tokens are bound to (RFC 8707).
 func (c Config) MCPResource() string { return c.BaseURL + "/mcp" }
+
+// Validate rejects an APP_BASE_URL that cannot be the app's public origin. Invitation and email-change links,
+// the OAuth issuer and the MCP resource are all built from it, so a typo would quietly break every one of them.
+func (c Config) Validate() error {
+	return validateBaseURL(c.BaseURL)
+}
+
+func validateBaseURL(raw string) error {
+	if strings.ContainsAny(raw, " \t\"'") {
+		return fmt.Errorf("APP_BASE_URL %q contains spaces or quotes; set only the URL, e.g. https://gradly.example.com", raw)
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("APP_BASE_URL %q is not a valid URL: %w", raw, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("APP_BASE_URL %q must start with https:// (or http:// for local use)", raw)
+	}
+	if u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(raw, "#") {
+		return fmt.Errorf("APP_BASE_URL %q must not contain credentials, a query or a '#' (is a comment on the same line?)", raw)
+	}
+	if u.Path != "" {
+		return fmt.Errorf("APP_BASE_URL %q must be an origin without a path, e.g. https://gradly.example.com", raw)
+	}
+	if !validHost(u.Hostname()) {
+		return fmt.Errorf("APP_BASE_URL %q has an invalid host name", raw)
+	}
+	if p := u.Port(); p != "" {
+		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
+			return fmt.Errorf("APP_BASE_URL %q has an invalid port", raw)
+		}
+	}
+	return nil
+}
+
+// validHost accepts IP addresses and DNS names made of letters, digits and inner hyphens.
+func validHost(host string) bool {
+	if net.ParseIP(host) != nil {
+		return true
+	}
+	if host == "" || len(host) > 253 {
+		return false
+	}
+	for _, label := range strings.Split(host, ".") {
+		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, r := range label {
+			if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-') {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 func (c Config) EmailConfigured() bool {
 	return strings.TrimSpace(c.ResendAPIKey) != "" && strings.TrimSpace(c.ResendFromEmail) != ""
