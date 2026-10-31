@@ -1,7 +1,11 @@
-**/bin
-**/obj
-**/App_Data
 .git
 .claude
-tests
+**/node_modules
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+backend/data
+**/*.exe
+**/*.db
+**/*.db-shm
+**/*.db-wal
 *.md

@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Gradly/Gradly.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Gradly.Tests/Gradly.Tests.csproj" />
-  </Folder>
-</Solution>

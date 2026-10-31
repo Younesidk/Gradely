@@ -1,19 +1,17 @@
 # build output
-bin/
-obj/
-*.user
-.vs/
+node_modules/
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+*.exe
 .idea/
+.vscode/
 
 # local runtime data (SQLite database, WAL files) and secrets
-App_Data/
+data/
 *.db
 *.db-shm
 *.db-wal
 .env
 .env.*
 !.env.example
-appsettings.Local.json
-appsettings.*.local.json
 *.log
-TestResults/
