@@ -1,0 +1,81 @@
+@inject AcademicService Academic
+@inject ToastService Toasts
+
+<Modal Title="@(Existing is null ? "New semester" : "Edit semester")" OnClose="OnClose">
+    <EditForm Model="_form" OnValidSubmit="SaveAsync" class="form">
+        <DataAnnotationsValidator />
+        @if (_error is not null) { <div class="alert alert-danger" role="alert">@_error</div> }
+        <div class="field">
+            <label for="sem-name">Name</label>
+            <InputText id="sem-name" class="input" @bind-Value="_form.Name" placeholder="S5, Semester 1, Spring 2027…" maxlength="100" autofocus />
+            <ValidationMessage For="() => _form.Name" class="field-error" />
+        </div>
+        <div class="field">
+            <label for="sem-year">Academic year <span class="opt">(optional)</span></label>
+            <InputText id="sem-year" class="input" @bind-Value="_form.AcademicYear" placeholder="2026–2027" maxlength="50" />
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label for="sem-start">Start date <span class="opt">(optional)</span></label>
+                <InputDate id="sem-start" class="input" @bind-Value="_start" />
+            </div>
+            <div class="field">
+                <label for="sem-end">End date <span class="opt">(optional)</span></label>
+                <InputDate id="sem-end" class="input" @bind-Value="_end" />
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" @onclick="OnClose">Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled="@_busy">@(Existing is null ? "Create semester" : "Save changes")</button>
+        </div>
+    </EditForm>
+</Modal>
+
+@code {
+    private readonly SemesterForm _form = new();
+    private DateTime? _start, _end;
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>When set the dialog edits this semester; otherwise it creates a new one.</summary>
+    [Parameter] public Semester? Existing { get; set; }
+    [Parameter] public EventCallback<Guid> OnSaved { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Existing is null) return;
+        _form.Name = Existing.Name;
+        _form.AcademicYear = Existing.AcademicYear;
+        _start = Existing.StartDate?.ToDateTime(TimeOnly.MinValue);
+        _end = Existing.EndDate?.ToDateTime(TimeOnly.MinValue);
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _error = null;
+        _form.StartDate = _start is null ? null : DateOnly.FromDateTime(_start.Value);
+        _form.EndDate = _end is null ? null : DateOnly.FromDateTime(_end.Value);
+        try
+        {
+            Guid id;
+            if (Existing is null) id = (await Academic.CreateSemesterAsync(_form)).Id;
+            else
+            {
+                await Academic.UpdateSemesterAsync(Existing.Id, _form);
+                id = Existing.Id;
+            }
+            Toasts.Success(Existing is null ? "Semester created." : "Semester updated.");
+            await OnSaved.InvokeAsync(id);
+        }
+        catch (UserFacingException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

@@ -1,0 +1,16 @@
+<div class="empty">
+    <div class="empty-icon" aria-hidden="true">@(Icon ?? "◌")</div>
+    <h3 class="empty-title">@Title</h3>
+    @if (!string.IsNullOrEmpty(Text))
+    {
+        <p class="muted">@Text</p>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string? Icon { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

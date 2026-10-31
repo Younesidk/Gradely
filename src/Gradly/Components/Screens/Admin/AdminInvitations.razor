@@ -1,0 +1,170 @@
+@page "/admin/invitations"
+@inject InvitationService Invitations
+@inject ToastService Toasts
+@inject ConfirmService Confirm
+@inject IJSRuntime JS
+
+<PageTitle>Invitations · Gradly</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>Invitations</h1>
+        <p class="muted">Gradly is invitation-only. Links are single-use and expire after seven days.</p>
+    </div>
+</div>
+
+<section class="card">
+    <h2>Invite someone</h2>
+    <EditForm Model="_box" OnValidSubmit="CreateAsync" FormName="invite" class="form form-inline">
+        <div class="field grow">
+            <label for="inv-email">Email address</label>
+            <InputText id="inv-email" type="email" class="input" @bind-Value="_box.Email" placeholder="student@university.edu" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary" disabled="@_busy"><Icon Name="mail" Size="16" />Create invitation</button>
+    </EditForm>
+    <p class="muted small">
+        @if (Invitations.EmailConfigured) { <span>Email delivery is <strong>on</strong>: the invitation is also sent by email.</span> }
+        else { <span>Email delivery is <strong>not configured</strong> (set <code>RESEND_API_KEY</code> and <code>RESEND_FROM_EMAIL</code>). Copy the link and send it yourself.</span> }
+    </p>
+
+    @if (_issued is not null)
+    {
+        <div class="callout callout-success" role="status">
+            <strong>Invitation link for @_issued.Invitation.Email</strong>
+            <p class="small">@IssuedMessage</p>
+            <div class="link-box">
+                <input class="input mono" readonly value="@_issued.Url" aria-label="Invitation link" @onfocus="SelectAll" id="issued-link" />
+                <button type="button" class="btn btn-primary btn-sm" @onclick="() => CopyAsync(_issued.Url)"><Icon Name="copy" Size="15" />Copy</button>
+            </div>
+            <p class="small muted">This is the only time the full link is shown — only a hash is stored. Lost it? Use “New link” below.</p>
+        </div>
+    }
+</section>
+
+<div class="section-title"><h2>All invitations</h2></div>
+@if (_rows is null)
+{
+    <Loading />
+}
+else if (_rows.Count == 0)
+{
+    <EmptyState Icon="✉️" Title="No invitations yet" Text="Invite your first user using the form above." />
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th scope="col">Email</th><th scope="col">Status</th><th scope="col">Created</th><th scope="col">Expires / used</th><th scope="col">Email sent</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _rows)
+                {
+                    <tr @key="r.Invitation.Id">
+                        <td data-label="Email">@r.Invitation.Email</td>
+                        <td data-label="Status"><span class="badge badge-@Tone(r.Status)">@r.Status</span></td>
+                        <td data-label="Created">@UiFormat.Date(r.Invitation.CreatedAtUtc)</td>
+                        <td data-label="Expires / used">@When(r)</td>
+                        <td data-label="Email sent">@(r.Invitation.EmailSentAtUtc is null ? "—" : UiFormat.Date(r.Invitation.EmailSentAtUtc))</td>
+                        <td class="row-actions">
+                            @if (r.Status is InvitationStatus.Pending or InvitationStatus.Expired)
+                            {
+                                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => RegenerateAsync(r)">@(r.Status == InvitationStatus.Expired ? "Regenerate" : "New link")</button>
+                            }
+                            @if (r.Status == InvitationStatus.Pending)
+                            {
+                                <button type="button" class="btn btn-ghost btn-sm text-danger" @onclick="() => RevokeAsync(r)">Revoke</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<InvitationRow>? _rows;
+    private InvitationIssue? _issued;
+    private bool _busy;
+    private readonly EmailBox _box = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => _rows = await Invitations.ListAsync();
+
+    private string IssuedMessage => _issued!.Email switch
+    {
+        { Success: true } => "The invitation email was sent. You can also share this link yourself.",
+        { Success: false } e => $"The email couldn't be sent ({e.Error}). Share this link manually.",
+        _ => "Email delivery isn't configured — share this link with the invitee.",
+    };
+
+    private async Task CreateAsync()
+    {
+        await RunAsync(async () =>
+        {
+            _issued = await Invitations.CreateAsync(_box.Email);
+            _box.Email = "";
+            Toasts.Success(_issued.Email is { Success: true } ? "Invitation created and emailed." : "Invitation created.");
+        });
+    }
+
+    private async Task RegenerateAsync(InvitationRow r)
+    {
+        await RunAsync(async () =>
+        {
+            _issued = await Invitations.RegenerateAsync(r.Invitation.Id);
+            Toasts.Success("New invitation link generated. The previous link no longer works.");
+        });
+    }
+
+    private async Task RevokeAsync(InvitationRow r)
+    {
+        if (!await Confirm.ConfirmAsync($"Revoke the invitation for {r.Invitation.Email}?", "The link will stop working immediately.", "Revoke invitation")) return;
+        await RunAsync(async () =>
+        {
+            await Invitations.RevokeAsync(r.Invitation.Id);
+            if (_issued?.Invitation.Id == r.Invitation.Id) _issued = null;
+            Toasts.Success("Invitation revoked.");
+        });
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+            await LoadAsync();
+        }
+        catch (UserFacingException ex) { Toasts.Error(ex.Message); }
+        finally { _busy = false; }
+    }
+
+    private async Task CopyAsync(string text)
+    {
+        var ok = await JS.InvokeAsync<bool>("gradly.copyText", text);
+        if (ok) Toasts.Success("Link copied to clipboard."); else Toasts.Info("Couldn't access the clipboard — select the link and copy it manually.");
+    }
+
+    private async Task SelectAll() => await JS.InvokeVoidAsync("gradly.selectElement", "issued-link");
+
+    private static string Tone(InvitationStatus s) => s switch
+    {
+        InvitationStatus.Pending => "warn",
+        InvitationStatus.Redeemed => "success",
+        InvitationStatus.Expired => "neutral",
+        _ => "danger-soft",
+    };
+
+    private static string When(InvitationRow r) => r.Status switch
+    {
+        InvitationStatus.Redeemed => "Used " + UiFormat.Date(r.Invitation.RedeemedAtUtc),
+        InvitationStatus.Revoked => "Revoked " + UiFormat.Date(r.Invitation.RevokedAtUtc),
+        InvitationStatus.Expired => "Expired " + UiFormat.Date(r.Invitation.ExpiresAtUtc),
+        _ => "Expires " + UiFormat.Date(r.Invitation.ExpiresAtUtc),
+    };
+
+    private sealed class EmailBox { public string? Email { get; set; } }
+}

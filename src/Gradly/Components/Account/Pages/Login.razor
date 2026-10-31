@@ -1,0 +1,99 @@
+@page "/account/login"
+@layout AuthLayout
+@attribute [AllowAnonymous]
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<ApplicationUser> SignIn
+@inject UserManager<ApplicationUser> Users
+@inject IPasswordHasher<ApplicationUser> Hasher
+@inject NavigationManager Nav
+
+<PageTitle>Sign in · Gradly</PageTitle>
+
+<h1 class="auth-title">Sign in</h1>
+<p class="muted auth-sub">Welcome back. Enter your details to continue.</p>
+
+@if (Notice == "password-changed")
+{
+    <div class="alert alert-success" role="status">Your password was changed. Please sign in again.</div>
+}
+else if (Notice == "signed-out")
+{
+    <div class="alert alert-info" role="status">You've been signed out.</div>
+}
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+<EditForm Model="Input" method="post" OnValidSubmit="SignInAsync" FormName="login" class="form">
+    <DataAnnotationsValidator />
+    <div class="field">
+        <label for="identifier">Username or email</label>
+        <InputText id="identifier" class="input" @bind-Value="Input.Identifier" autocomplete="username" />
+        <ValidationMessage For="() => Input.Identifier" class="field-error" />
+    </div>
+    <div class="field">
+        <label for="password">Password</label>
+        <InputText id="password" type="password" class="input" @bind-Value="Input.Password" autocomplete="current-password" />
+        <ValidationMessage For="() => Input.Password" class="field-error" />
+    </div>
+    <label class="check">
+        <InputCheckbox @bind-Value="Input.RememberMe" /> <span>Keep me signed in on this device</span>
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+</EditForm>
+
+<p class="muted small auth-foot">Gradly is invitation-only. Ask your administrator for an invitation link.</p>
+
+@code {
+    private const string GenericError = "Sign-in failed. Check your username/email and password. If this keeps happening your account may be locked or disabled.";
+
+    private string? _error;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery] private string? Notice { get; set; }
+    [SupplyParameterFromForm] private LoginModel Input { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && HttpContext.User.Identity?.IsAuthenticated == true)
+            Nav.NavigateTo(LocalUrl.Safe(ReturnUrl));
+    }
+
+    private async Task SignInAsync()
+    {
+        var id = (Input.Identifier ?? "").Trim();
+        var user = await Users.FindByEmailAsync(id) ?? await Users.FindByNameAsync(id);
+        if (user is null)
+        {
+            Hasher.HashPassword(new ApplicationUser(), Input.Password ?? ""); // keep timing similar to a real attempt
+            _error = GenericError;
+            return;
+        }
+
+        var result = await SignIn.PasswordSignInAsync(user, Input.Password ?? "", Input.RememberMe, lockoutOnFailure: true);
+        if (!result.Succeeded)
+        {
+            _error = GenericError;
+            return;
+        }
+
+        user.LastLoginAtUtc = DateTime.UtcNow;
+        await Users.UpdateAsync(user);
+        Nav.NavigateTo(LocalUrl.Safe(ReturnUrl));
+    }
+
+    private sealed class LoginModel
+    {
+        [Required(ErrorMessage = "Enter your username or email.")]
+        public string? Identifier { get; set; }
+
+        [Required(ErrorMessage = "Enter your password.")]
+        public string? Password { get; set; }
+
+        public bool RememberMe { get; set; }
+    }
+}

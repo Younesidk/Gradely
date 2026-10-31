@@ -1,0 +1,36 @@
+@implements IDisposable
+@inject ToastService Toasts
+
+<div class="toast-region" aria-live="polite" aria-atomic="false">
+    @foreach (var t in _items)
+    {
+        <div class="toast toast-@t.Kind.ToString().ToLowerInvariant()" role="@(t.Kind == ToastKind.Error ? "alert" : "status")">
+            <span class="toast-text">@t.Text</span>
+            <button type="button" class="toast-close" aria-label="Dismiss" @onclick="() => Dismiss(t.Id)">×</button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastMessage> _items = [];
+
+    protected override void OnInitialized() => Toasts.OnShow += Show;
+
+    private void Show(ToastMessage message)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            _items.Add(message);
+            StateHasChanged();
+            await Task.Delay(message.Kind == ToastKind.Error ? 7000 : 4000);
+            Dismiss(message.Id);
+        });
+    }
+
+    private void Dismiss(Guid id)
+    {
+        if (_items.RemoveAll(t => t.Id == id) > 0) StateHasChanged();
+    }
+
+    public void Dispose() => Toasts.OnShow -= Show;
+}

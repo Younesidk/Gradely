@@ -1,0 +1,19 @@
+# build output
+bin/
+obj/
+*.user
+.vs/
+.idea/
+
+# local runtime data (SQLite database, WAL files) and secrets
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.local.json
+*.log
+TestResults/

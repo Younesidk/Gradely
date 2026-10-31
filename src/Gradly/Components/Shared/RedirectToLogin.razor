@@ -1,0 +1,28 @@
+@inject NavigationManager Nav
+
+@if (_denied)
+{
+    <div class="page-narrow">
+        <EmptyState Icon="⛔" Title="You don't have access to this page"
+                    Text="This area is only available to platform administrators.">
+            <a class="btn btn-primary" href="/">Back to dashboard</a>
+        </EmptyState>
+    </div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+    private bool _denied;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = AuthState is null ? null : (await AuthState).User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            _denied = true;
+            return;
+        }
+        var returnUrl = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        Nav.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+    }
+}

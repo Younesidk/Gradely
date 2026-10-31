@@ -1,0 +1,20 @@
+﻿@page "/Error"
+@layout AuthLayout
+@using System.Diagnostics
+
+<PageTitle>Error · Gradly</PageTitle>
+<h1 class="auth-title">Something went wrong</h1>
+<p class="muted">An unexpected error occurred. Please try again.</p>
+@if (!string.IsNullOrEmpty(RequestId))
+{
+    <p class="muted small">Reference: <code>@RequestId</code></p>
+}
+<a class="btn btn-primary btn-block" href="/">Back to Gradly</a>
+
+@code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+    private string? RequestId { get; set; }
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

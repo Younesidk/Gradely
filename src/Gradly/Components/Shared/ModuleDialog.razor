@@ -1,0 +1,113 @@
+@inject AcademicService Academic
+@inject ToastService Toasts
+
+<Modal Title="@(Existing is null ? "Add module" : "Edit module")" OnClose="OnClose">
+    <EditForm Model="_form" OnValidSubmit="SaveAsync" class="form">
+        <DataAnnotationsValidator />
+        @if (_error is not null) { <div class="alert alert-danger" role="alert">@_error</div> }
+        <div class="field-row field-row-wide">
+            <div class="field">
+                <label for="mod-name">Module name</label>
+                <InputText id="mod-name" class="input" @bind-Value="_form.Name" maxlength="100" placeholder="Information systems design" autofocus />
+                <ValidationMessage For="() => _form.Name" class="field-error" />
+            </div>
+            <div class="field">
+                <label for="mod-code">Code <span class="opt">(optional)</span></label>
+                <InputText id="mod-code" class="input" @bind-Value="_form.Code" maxlength="30" placeholder="SID" />
+            </div>
+        </div>
+        <div class="field-row field-row-3">
+            <div class="field">
+                <label for="mod-coef">Coefficient</label>
+                <InputNumber id="mod-coef" class="input" @bind-Value="_form.Coefficient" step="any" min="0" />
+            </div>
+            <div class="field">
+                <label for="mod-max">Maximum grade</label>
+                <InputNumber id="mod-max" class="input" @bind-Value="_form.MaxGrade" step="any" min="0" />
+            </div>
+            <div class="field">
+                <label for="mod-pass">Passing threshold</label>
+                <InputNumber id="mod-pass" class="input" @bind-Value="_form.PassingThreshold" step="any" min="0" />
+            </div>
+        </div>
+
+        <label class="check">
+            <input type="checkbox" checked="@_form.HasLabExam" @onchange="LabToggled" />
+            <span>This module has a lab exam</span>
+        </label>
+
+        <div class="field">
+            <label for="mod-formula">Grading formula</label>
+            <select id="mod-formula" class="input" @bind="_form.FormulaId">
+                <option value="@((Guid?)null)">Automatic (my default for this kind of module)</option>
+                @foreach (var f in Formulas.Where(f => f.ForLabExam == _form.HasLabExam))
+                {
+                    <option value="@f.Id">@f.Name@(f.IsDefault ? " (default)" : "")</option>
+                }
+            </select>
+            @if (!Formulas.Any(f => f.ForLabExam == _form.HasLabExam))
+            {
+                <span class="hint hint-warn">
+                    You don't have a formula for modules @(_form.HasLabExam ? "with" : "without") a lab exam yet.
+                    <a href="/formulas">Create one in Formula Settings</a> – grades stay incomplete until you do.
+                </span>
+            }
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" @onclick="OnClose">Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled="@_busy">@(Existing is null ? "Add module" : "Save changes")</button>
+        </div>
+    </EditForm>
+</Modal>
+
+@code {
+    private readonly ModuleForm _form = new();
+    private string? _error;
+    private bool _busy;
+
+    [Parameter] public Guid SemesterId { get; set; }
+    [Parameter] public Module? Existing { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<GradeFormula> Formulas { get; set; } = [];
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Existing is null) return;
+        _form.Name = Existing.Name;
+        _form.Code = Existing.Code;
+        _form.Coefficient = Existing.Coefficient;
+        _form.MaxGrade = Existing.MaxGrade;
+        _form.PassingThreshold = Existing.PassingThreshold;
+        _form.HasLabExam = Existing.HasLabExam;
+        _form.FormulaId = Existing.FormulaId;
+    }
+
+    private void LabToggled(ChangeEventArgs e)
+    {
+        _form.HasLabExam = e.Value is true;
+        _form.FormulaId = null; // formulas are specific to lab / no-lab modules; fall back to the default
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            if (Existing is null) await Academic.AddModuleAsync(SemesterId, _form);
+            else await Academic.UpdateModuleAsync(Existing.Id, _form);
+            Toasts.Success(Existing is null ? "Module added." : "Module updated.");
+            await OnSaved.InvokeAsync();
+        }
+        catch (UserFacingException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

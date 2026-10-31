@@ -1,0 +1,51 @@
+@page "/account/confirm-email-change"
+@layout AuthLayout
+@attribute [AllowAnonymous]
+@using System.Text
+@using Microsoft.AspNetCore.WebUtilities
+@inject UserManager<ApplicationUser> Users
+@inject SignInManager<ApplicationUser> SignIn
+
+<PageTitle>Confirm email · Gradly</PageTitle>
+
+@if (_success)
+{
+    <h1 class="auth-title">Email address confirmed</h1>
+    <div class="alert alert-success" role="status">Your email address has been updated.</div>
+    <a class="btn btn-primary btn-block" href="/settings">Back to your account</a>
+}
+else
+{
+    <h1 class="auth-title">Couldn't confirm the address</h1>
+    <div class="alert alert-danger" role="alert">This confirmation link is invalid or has expired. Request a new one from Account Settings.</div>
+    <a class="btn btn-ghost btn-block" href="/account/login">Go to sign in</a>
+}
+
+@code {
+    private bool _success;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromQuery] private string? UserId { get; set; }
+    [SupplyParameterFromQuery] private string? Email { get; set; }
+    [SupplyParameterFromQuery] private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(UserId) || string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Code)) return;
+
+        string token;
+        try { token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code)); }
+        catch (FormatException) { return; }
+
+        var user = await Users.FindByIdAsync(UserId);
+        if (user is null || user.IsDisabled) return;
+
+        var result = await Users.ChangeEmailAsync(user, Email, token);
+        if (!result.Succeeded) return;
+
+        _success = true;
+        // ChangeEmail rotates the security stamp; keep the current browser session alive if it belongs to this user.
+        if (HttpContext.User.Identity?.IsAuthenticated == true && HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) == user.Id)
+            await SignIn.RefreshSignInAsync(user);
+    }
+}

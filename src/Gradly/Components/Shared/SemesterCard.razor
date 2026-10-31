@@ -1,0 +1,42 @@
+<article class="card sem-card">
+    <div class="sem-card-head">
+        <div class="sem-card-id">
+            <h3 class="sem-card-title"><a href="@Href">@View.Semester.Name</a></h3>
+            <div class="muted small">@Subtitle</div>
+        </div>
+        <div class="avg" title="Semester average">
+            <span class="avg-value">@UiFormat.Average(View.Summary)</span>
+            @if (View.Summary.Average is not null)
+            {
+                <span class="avg-scale">/ @GradeFormat.Number(View.Summary.Scale)</span>
+            }
+        </div>
+    </div>
+    <div class="chip-row">
+        <span class="chip">@View.Summary.ModuleCount module@(View.Summary.ModuleCount == 1 ? "" : "s")</span>
+        @if (View.Summary.PassedCount > 0) { <span class="chip chip-success">@View.Summary.PassedCount passed</span> }
+        @if (View.Summary.FailedCount > 0) { <span class="chip chip-danger">@View.Summary.FailedCount failed</span> }
+        @if (View.Summary.IncompleteCount > 0) { <span class="chip chip-warn">@View.Summary.IncompleteCount incomplete</span> }
+        @if (View.Summary.IsProvisional && View.Summary.Average is not null) { <span class="chip chip-warn">provisional</span> }
+    </div>
+    @Actions
+</article>
+
+@code {
+    [Parameter, EditorRequired] public SemesterView View { get; set; } = default!;
+    [Parameter, EditorRequired] public string Href { get; set; } = "";
+    [Parameter] public RenderFragment? Actions { get; set; }
+
+    private string Subtitle
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(View.Semester.AcademicYear)) parts.Add(View.Semester.AcademicYear!);
+            if (View.Semester.StartDate is { } s && View.Semester.EndDate is { } e) parts.Add($"{UiFormat.Date(s)} – {UiFormat.Date(e)}");
+            else if (View.Semester.StartDate is { } s2) parts.Add($"from {UiFormat.Date(s2)}");
+            else if (View.Semester.EndDate is { } e2) parts.Add($"until {UiFormat.Date(e2)}");
+            return parts.Count == 0 ? "—" : string.Join(" · ", parts);
+        }
+    }
+}

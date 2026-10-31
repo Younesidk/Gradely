@@ -1,0 +1,92 @@
+@page "/semesters"
+@inject AcademicService Academic
+@inject ToastService Toasts
+@inject ConfirmService Confirm
+
+<PageTitle>Semesters · Gradly</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>Semesters</h1>
+        <p class="muted">Each semester has its own modules, grades and weighted average.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary" @onclick="() => _dialog = new DialogState()"><Icon Name="plus" Size="16" />New semester</button>
+    </div>
+</div>
+
+@if (_semesters is null)
+{
+    <Loading />
+}
+else if (_semesters.Count == 0)
+{
+    <EmptyState Icon="📚" Title="No semesters yet" Text="Create your first semester, then add its modules and grades.">
+        <button type="button" class="btn btn-primary" @onclick="() => _dialog = new DialogState()"><Icon Name="plus" Size="16" />Create a semester</button>
+    </EmptyState>
+}
+else
+{
+    <div class="card-grid">
+        @foreach (var s in _semesters)
+        {
+            <SemesterCard View="s" Href="@($"/semesters/{s.Semester.Id}")">
+                <Actions>
+                    <div class="card-actions">
+                        <a class="btn btn-ghost btn-sm" href="/semesters/@s.Semester.Id">Open</a>
+                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _dialog = new DialogState(s.Semester)"><Icon Name="edit" Size="15" />Edit</button>
+                        <button type="button" class="icon-btn" aria-label="Move @s.Semester.Name up" title="Move up" disabled="@(s == _semesters[0])" @onclick="() => Move(s, -1)"><Icon Name="up" Size="16" /></button>
+                        <button type="button" class="icon-btn" aria-label="Move @s.Semester.Name down" title="Move down" disabled="@(s == _semesters[^1])" @onclick="() => Move(s, 1)"><Icon Name="down" Size="16" /></button>
+                        <button type="button" class="icon-btn text-danger" aria-label="Delete @s.Semester.Name" title="Delete" @onclick="() => Delete(s)"><Icon Name="trash" Size="16" /></button>
+                    </div>
+                </Actions>
+            </SemesterCard>
+        }
+    </div>
+}
+
+@if (_dialog is not null)
+{
+    <SemesterDialog Existing="_dialog.Semester" OnClose="() => _dialog = null" OnSaved="Saved" />
+}
+
+@code {
+    private sealed record DialogState(Semester? Semester = null);
+
+    private List<SemesterView>? _semesters;
+    private DialogState? _dialog;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => _semesters = await Academic.GetSemestersAsync();
+
+    private async Task Saved(Guid _)
+    {
+        _dialog = null;
+        await LoadAsync();
+    }
+
+    private async Task Move(SemesterView s, int direction)
+    {
+        try { await Academic.MoveSemesterAsync(s.Semester.Id, direction); }
+        catch (UserFacingException ex) { Toasts.Error(ex.Message); }
+        await LoadAsync();
+    }
+
+    private async Task Delete(SemesterView s)
+    {
+        var count = s.Modules.Count;
+        var ok = await Confirm.ConfirmAsync($"Delete “{s.Semester.Name}”?",
+            count == 0 ? "This semester will be permanently deleted."
+                       : $"This permanently deletes the semester and its {count} module{(count == 1 ? "" : "s")} with all their grades. This can't be undone.",
+            "Delete semester");
+        if (!ok) return;
+        try
+        {
+            await Academic.DeleteSemesterAsync(s.Semester.Id);
+            Toasts.Success("Semester deleted.");
+        }
+        catch (UserFacingException ex) { Toasts.Error(ex.Message); }
+        await LoadAsync();
+    }
+}

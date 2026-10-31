@@ -1,0 +1,25 @@
+@* Colour-coded module state: green = passed, red = failed, amber = incomplete, neutral = waiting. *@
+<span class="badge badge-@Tone" title="@Title">@Text</span>
+
+@code {
+    [Parameter] public ModuleResult? Result { get; set; }
+
+    private string Tone => Result switch
+    {
+        null => "neutral",
+        { Status: ModuleStatus.Complete, Passed: true } => "success",
+        { Status: ModuleStatus.Complete } => "danger",
+        { Status: ModuleStatus.Incomplete } => "warn",
+        { Status: ModuleStatus.FormulaError or ModuleStatus.NoFormula } => "danger-soft",
+        _ => "neutral",
+    };
+
+    private string Text => Result switch
+    {
+        null => "—",
+        { Status: ModuleStatus.Incomplete } => "Incomplete",
+        var r => r.StatusText,
+    };
+
+    private string? Title => Result?.Status == ModuleStatus.Incomplete ? Result.StatusText : Result?.FormulaError;
+}
