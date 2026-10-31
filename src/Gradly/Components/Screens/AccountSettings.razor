@@ -7,8 +7,8 @@
 
 <div class="page-head">
     <div>
-        <h1>Account Settings</h1>
-        <p class="muted">Manage your sign-in details.</p>
+        <h1>Account settings</h1>
+        <p class="muted">Your sign-in details</p>
     </div>
 </div>
 
@@ -100,7 +100,7 @@ else
     {
         _info = await Account.GetAsync();
         _username.Value = _info.UserName;
-        if (Notice == "username") Toasts.Success("Username updated.");
+        if (Notice == "username") Toasts.Success("Username updated");
     }
 
     private async Task SaveUserName()
@@ -119,8 +119,8 @@ else
         {
             var result = await Account.RequestEmailChangeAsync(_email.Value);
             _manualLink = result.ManualLink;
-            if (result.EmailSent) Toasts.Success("Check your inbox — we sent a confirmation link to the new address.");
-            else Toasts.Info("Email delivery isn't configured, so the link is shown below.");
+            if (result.EmailSent) Toasts.Success("Check your inbox — we sent a confirmation link to the new address");
+            else Toasts.Info("Email delivery isn't configured, so the link is shown below");
             _email.Value = "";
         });
     }
@@ -129,7 +129,7 @@ else
     {
         if (_password.Next != _password.Repeat)
         {
-            Toasts.Error("The new passwords don't match.");
+            Toasts.Error("The new passwords don't match");
             return;
         }
         await RunAsync(async () =>

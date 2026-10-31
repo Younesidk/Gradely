@@ -8,7 +8,7 @@
 <div class="page-head">
     <div>
         <h1>Users</h1>
-        <p class="muted">All registered accounts. Storage values are estimates.</p>
+        <p class="muted">All registered accounts, with estimated storage</p>
     </div>
     <div class="page-actions">
         <a class="btn btn-primary" href="/admin/invitations"><Icon Name="mail" Size="16" />Invite someone</a>
@@ -26,7 +26,7 @@
 }
 else if (_page.Items.Count == 0)
 {
-    <EmptyState Icon="👥" Title="No users found" Text="@(string.IsNullOrWhiteSpace(_search) ? "Invite someone to get started." : "Try a different search.")" />
+    <EmptyState Icon="users" Title="No users found" Text="@(string.IsNullOrWhiteSpace(_search) ? "Invite someone to get started." : "Try a different search.")" />
 }
 else
 {

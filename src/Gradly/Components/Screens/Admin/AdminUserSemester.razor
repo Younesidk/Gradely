@@ -5,7 +5,7 @@
 
 @if (_notFound)
 {
-    <EmptyState Icon="🔎" Title="Not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>
+    <EmptyState Icon="search" Title="Not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>
 }
 else if (_data is null)
 {
@@ -14,7 +14,7 @@ else if (_data is null)
 else
 {
     var view = _data.Value.Semester;
-    <a class="back-link" href="/admin/users/@UserId">← @_data.Value.User.UserName</a>
+    <a class="back-link" href="/admin/users/@UserId"><Icon Name="back" Size="16" />@_data.Value.User.UserName</a>
     <AdminBanner UserName="@_data.Value.User.UserName" />
 
     <div class="page-head">
@@ -28,7 +28,7 @@ else
 
     @if (view.Modules.Count == 0)
     {
-        <EmptyState Icon="🧩" Title="No modules in this semester" />
+        <EmptyState Icon="modules" Title="No modules in this semester" />
     }
     else
     {

@@ -7,7 +7,7 @@
 
 @if (_notFound)
 {
-    <EmptyState Icon="🔎" Title="Semester not found" Text="It may have been deleted.">
+    <EmptyState Icon="search" Title="Semester not found" Text="It may have been deleted.">
         <a class="btn btn-primary" href="/semesters">Back to semesters</a>
     </EmptyState>
 }
@@ -17,7 +17,7 @@ else if (_view is null)
 }
 else
 {
-    <a class="back-link" href="/semesters">← All semesters</a>
+    <a class="back-link" href="/semesters"><Icon Name="back" Size="16" />All semesters</a>
     <div class="page-head">
         <div>
             <h1>@_view.Semester.Name</h1>
@@ -33,7 +33,7 @@ else
 
     @if (_view.Modules.Count == 0)
     {
-        <EmptyState Icon="🧩" Title="No modules in this semester" Text="Add the modules you're taking, then enter your grades as you receive them.">
+        <EmptyState Icon="modules" Title="No modules in this semester" Text="Add the modules you're taking, then enter your grades as you receive them.">
             <button type="button" class="btn btn-primary" @onclick="() => _moduleDialog = new ModuleDialogState()"><Icon Name="plus" Size="16" />Add your first module</button>
         </EmptyState>
     }
@@ -138,7 +138,7 @@ else
         try
         {
             await Academic.DeleteModuleAsync(m.Id);
-            Toasts.Success("Module deleted.");
+            Toasts.Success("Module deleted");
         }
         catch (UserFacingException ex) { Toasts.Error(ex.Message); }
         await LoadAsync();

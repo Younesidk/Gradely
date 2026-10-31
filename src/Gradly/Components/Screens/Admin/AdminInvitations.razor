@@ -48,7 +48,7 @@
 }
 else if (_rows.Count == 0)
 {
-    <EmptyState Icon="✉️" Title="No invitations yet" Text="Invite your first user using the form above." />
+    <EmptyState Icon="mail" Title="No invitations yet" Text="Invite your first user using the form above." />
 }
 else
 {
@@ -126,7 +126,7 @@ else
         {
             await Invitations.RevokeAsync(r.Invitation.Id);
             if (_issued?.Invitation.Id == r.Invitation.Id) _issued = null;
-            Toasts.Success("Invitation revoked.");
+            Toasts.Success("Invitation revoked");
         });
     }
 
@@ -145,7 +145,7 @@ else
     private async Task CopyAsync(string text)
     {
         var ok = await JS.InvokeAsync<bool>("gradly.copyText", text);
-        if (ok) Toasts.Success("Link copied to clipboard."); else Toasts.Info("Couldn't access the clipboard — select the link and copy it manually.");
+        if (ok) Toasts.Success("Link copied to clipboard"); else Toasts.Info("Couldn't access the clipboard — select the link and copy it manually");
     }
 
     private async Task SelectAll() => await JS.InvokeVoidAsync("gradly.selectElement", "issued-link");

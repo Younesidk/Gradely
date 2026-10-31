@@ -1,30 +1,28 @@
-<div class="stat-grid">
-    <div class="stat stat-primary">
-        <div class="stat-label">@AverageLabel</div>
-        <div class="stat-value">@UiFormat.Average(Summary)@if (Summary.Average is not null)
+<section class="summary" aria-label="@AverageLabel">
+    <div class="summary-avg">
+        <div class="summary-label">@AverageLabel</div>
+        <div class="summary-value">
+            <span class="summary-figure">@UiFormat.Average(Summary)</span>
+            @if (Summary.Average is not null)
             {
-                <span class="stat-unit"> / @GradeFormat.Number(Summary.Scale)</span>
+                <span class="summary-scale">/ @GradeFormat.Number(Summary.Scale)</span>
             }
         </div>
         @if (Summary.Average is null)
         {
-            <div class="stat-note">@(Summary.ModuleCount == 0 ? "No modules yet" : "Waiting for completed modules")</div>
+            <div class="summary-note">@(Summary.ModuleCount == 0 ? "No modules yet" : "Waiting for completed modules")</div>
         }
         else if (Summary.IsProvisional)
         {
-            <div class="stat-note"><span class="tag tag-warn">Provisional</span> @Summary.IncompleteCount incomplete module@(Summary.IncompleteCount == 1 ? "" : "s") not counted</div>
+            <div class="summary-note"><span class="tag tag-warn">Provisional</span> @UiFormat.Plural(Summary.IncompleteCount, "incomplete module") not counted</div>
         }
         else
         {
-            <div class="stat-note">Weighted by coefficient</div>
+            <div class="summary-note">Weighted by coefficient</div>
         }
     </div>
-    <div class="stat"><div class="stat-label">Modules</div><div class="stat-value">@Summary.ModuleCount</div></div>
-    <div class="stat"><div class="stat-label">Completed</div><div class="stat-value">@Summary.CompletedCount</div></div>
-    <div class="stat stat-warn"><div class="stat-label">Incomplete</div><div class="stat-value">@Summary.IncompleteCount</div></div>
-    <div class="stat stat-success"><div class="stat-label">Passed</div><div class="stat-value">@Summary.PassedCount</div></div>
-    <div class="stat stat-danger"><div class="stat-label">Failed</div><div class="stat-value">@Summary.FailedCount</div></div>
-</div>
+    <StatusSplit Summary="Summary" />
+</section>
 
 @code {
     [Parameter, EditorRequired] public SemesterSummary Summary { get; set; } = SemesterSummary.Empty;

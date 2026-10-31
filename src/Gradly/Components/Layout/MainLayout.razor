@@ -6,15 +6,15 @@
 <div class="app-shell @(_menuOpen ? "menu-open" : "")">
     <aside class="sidebar" id="sidebar" aria-label="Sidebar">
         <a class="brand" href="/" aria-label="Gradly home">
-            <span class="brand-mark" aria-hidden="true">G</span>
-            <span class="brand-text">Gradly<small>Your grades. Your rules.</small></span>
+            <svg class="brand-mark" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 13h16"/><path d="M12 7v10"/></svg>
+            <span class="brand-text">Gradly</span>
         </a>
 
         <nav class="nav" aria-label="Main navigation">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All"><Icon Name="dashboard" />Dashboard</NavLink>
             <NavLink class="nav-link" href="semesters"><Icon Name="semesters" />Semesters</NavLink>
-            <NavLink class="nav-link" href="formulas"><Icon Name="formula" />Formula Settings</NavLink>
-            <NavLink class="nav-link" href="settings"><Icon Name="account" />Account Settings</NavLink>
+            <NavLink class="nav-link" href="formulas"><Icon Name="formula" />Formula settings</NavLink>
+            <NavLink class="nav-link" href="settings"><Icon Name="account" />Account settings</NavLink>
 
             <AuthorizeView Policy="@Policies.AdminOnly">
                 <div class="nav-section">Administration</div>
@@ -44,13 +44,13 @@
     <div class="main">
         <header class="topbar">
             <button type="button" class="icon-btn menu-btn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="@_menuOpen.ToString().ToLowerInvariant()" @onclick="ToggleMenu">
-                <Icon Name="menu" Size="20" />
+                <Icon Name="menu" Size="18" />
             </button>
             <a class="topbar-brand" href="/">Gradly</a>
             <div class="spacer"></div>
             <button type="button" class="icon-btn theme-btn" aria-label="Toggle light / dark theme" title="Toggle theme" @onclick="ToggleTheme">
-                <span class="theme-sun"><Icon Name="sun" Size="20" /></span>
-                <span class="theme-moon"><Icon Name="moon" Size="20" /></span>
+                <span class="theme-sun"><Icon Name="sun" Size="18" /></span>
+                <span class="theme-moon"><Icon Name="moon" Size="18" /></span>
             </button>
         </header>
 
