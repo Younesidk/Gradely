@@ -16,7 +16,7 @@
   });
 </script>
 
-<svelte:head><title>Confirm email · Gradly</title></svelte:head>
+<svelte:head><title>Confirm email · Gradely</title></svelte:head>
 
 {#if state === 'working'}
   <Loading />

@@ -63,21 +63,21 @@ func (r *Resend) Send(ctx context.Context, m Message) error {
 // Invitation builds the invitation email.
 func Invitation(to, url string, expires time.Time) Message {
 	date := expires.UTC().Format("January 2, 2006")
-	htmlBody := layout("You're invited to Gradly",
-		"You've been invited to join <strong>Gradly</strong> — a simple place to keep your semesters, modules and grades, and to see exactly what you need to pass.",
+	htmlBody := layout("You're invited to Gradely",
+		"You've been invited to join <strong>Gradely</strong> — a simple place to keep your semesters, modules and grades, and to see exactly what you need to pass.",
 		"Create your account", url,
 		fmt.Sprintf("This invitation is for %s and expires on %s (UTC). It can only be used once.", html.EscapeString(to), date))
-	text := fmt.Sprintf("You've been invited to join Gradly.\n\nCreate your account: %s\n\nThis invitation is for %s, expires on %s (UTC) and can only be used once.\n\nGradly — Your grades. Your rules.", url, to, date)
-	return Message{To: to, Subject: "You're invited to Gradly", HTML: htmlBody, Text: text}
+	text := fmt.Sprintf("You've been invited to join Gradely.\n\nCreate your account: %s\n\nThis invitation is for %s, expires on %s (UTC) and can only be used once.\n\nGradely — Your grades. Your rules.", url, to, date)
+	return Message{To: to, Subject: "You're invited to Gradely", HTML: htmlBody, Text: text}
 }
 
 // ConfirmEmailChange builds the email-change confirmation email.
 func ConfirmEmailChange(to, url string) Message {
 	htmlBody := layout("Confirm your new email address",
-		"Someone (hopefully you) asked to change the email address on a Gradly account to this one. Confirm to complete the change.",
+		"Someone (hopefully you) asked to change the email address on a Gradely account to this one. Confirm to complete the change.",
 		"Confirm email address", url, "If you didn't request this, you can safely ignore this message.")
-	text := fmt.Sprintf("Confirm your new Gradly email address: %s\n\nIf you didn't request this, ignore this message.", url)
-	return Message{To: to, Subject: "Confirm your new Gradly email address", HTML: htmlBody, Text: text}
+	text := fmt.Sprintf("Confirm your new Gradely email address: %s\n\nIf you didn't request this, ignore this message.", url)
+	return Message{To: to, Subject: "Confirm your new Gradely email address", HTML: htmlBody, Text: text}
 }
 
 // layout renders a card-style email with inline styles for mail-client compatibility.
@@ -89,7 +89,7 @@ func layout(title, body, cta, url, footnote string) string {
     <tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%%;background:#ffffff;border-radius:12px;border:1px solid #e3e3df;">
         <tr><td style="padding:28px 32px 8px 32px;">
-          <div style="font-size:22px;font-weight:600;color:#24418a;">Gradly</div>
+          <div style="font-size:22px;font-weight:600;color:#24418a;">Gradely</div>
         </td></tr>
         <tr><td style="padding:16px 32px 0 32px;">
           <h1 style="font-size:20px;line-height:1.3;margin:0 0 12px 0;">%s</h1>

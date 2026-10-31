@@ -27,9 +27,9 @@
 
 <div class="app-shell {menuOpen ? 'menu-open' : ''}">
   <aside class="sidebar" id="sidebar" aria-label="Sidebar">
-    <a class="brand" href="/" aria-label="Gradly home">
+    <a class="brand" href="/" aria-label="Gradely home">
       <svg class="brand-mark" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 13h16" /><path d="M12 7v10" /></svg>
-      <span class="brand-text">Gradly</span>
+      <span class="brand-text">Gradely</span>
     </a>
 
     <nav class="nav" aria-label="Main navigation">
@@ -66,7 +66,7 @@
         aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
         <Icon name="menu" size={18} />
       </button>
-      <a class="topbar-brand" href="/">Gradly</a>
+      <a class="topbar-brand" href="/">Gradely</a>
       <div class="spacer"></div>
       <button type="button" class="icon-btn theme-btn" aria-label="Toggle light / dark theme" title="Toggle theme" onclick={toggleTheme}>
         <span class="theme-sun"><Icon name="sun" size={18} /></span>

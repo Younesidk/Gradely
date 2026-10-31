@@ -25,7 +25,7 @@
   });
 </script>
 
-<svelte:head><title>Dashboard · Gradly</title></svelte:head>
+<svelte:head><title>Dashboard · Gradely</title></svelte:head>
 
 {#if data === null}
   <Loading text="Loading your dashboard…" />
@@ -48,7 +48,7 @@
       <ol class="steps">
         <li><span class="step-num">1</span><div><strong>Create a semester</strong><p class="muted">For example “S5” or “Spring 2027”. Add as many as you need.</p></div></li>
         <li><span class="step-num">2</span><div><strong>Add your modules</strong><p class="muted">Give each a coefficient. Passing threshold and maximum grade are adjustable.</p></div></li>
-        <li><span class="step-num">3</span><div><strong>Enter your grades</strong><p class="muted">CC1, CC2, lab and exam. Gradly tells you the exam grade you need to pass.</p></div></li>
+        <li><span class="step-num">3</span><div><strong>Enter your grades</strong><p class="muted">CC1, CC2, lab and exam. Gradely tells you the exam grade you need to pass.</p></div></li>
       </ol>
       <div class="onboarding-actions">
         <button type="button" class="btn btn-primary" onclick={() => (showNew = true)}><Icon name="plus" size={16} />Create your first semester</button>

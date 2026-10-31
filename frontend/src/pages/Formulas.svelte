@@ -151,7 +151,7 @@
   const firstError = $derived(preview?.errors?.[0]);
 </script>
 
-<svelte:head><title>Formula settings · Gradly</title></svelte:head>
+<svelte:head><title>Formula settings · Gradely</title></svelte:head>
 
 <div class="page-head">
   <div>
@@ -317,7 +317,7 @@
       <li>Variables: <code>CC1</code>, <code>CC2</code>, <code>Lab</code> (lab formulas only), <code>Exam</code>.</li>
       <li>Operators: <code>+ - * /</code> and parentheses. Decimals use a dot: <code>0.4</code>.</li>
       <li>Functions: <code>AVG()</code>, <code>MIN()</code>, <code>MAX()</code>, <code>ABS()</code>, <code>ROUND(x, digits)</code>.</li>
-      <li>Gradly only calculates “the exam grade you need” when the formula is a simple, increasing function of <code>Exam</code> (sums, weights, averages).
+      <li>Gradely only calculates “the exam grade you need” when the formula is a simple, increasing function of <code>Exam</code> (sums, weights, averages).
         Formulas like <code>MAX(Exam, …)</code> still compute a grade but won't get a required-exam hint.</li>
     </ul>
   </section>

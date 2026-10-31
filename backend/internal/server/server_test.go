@@ -54,7 +54,7 @@ func newEnv(t *testing.T, mutate ...func(*config.Config)) *env {
 	gin.SetMode(gin.TestMode)
 	dir := t.TempDir()
 	cfg := config.Config{
-		DataDir: dir, BaseURL: "http://gradly.test", AuthRequestsPerMin: 1000, InvitationValidDays: 7,
+		DataDir: dir, BaseURL: "http://gradely.test", AuthRequestsPerMin: 1000, InvitationValidDays: 7,
 		AdminEmail: "admin@example.com", AdminUsername: "admin", AdminPassword: adminPassword,
 	}
 	for _, m := range mutate {
@@ -117,7 +117,7 @@ func (c *client) do(method, path string, body any) resp {
 	}
 	req, _ := http.NewRequest(method, c.e.srv.URL+path, rd)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Gradly", "1")
+	req.Header.Set("X-Gradely", "1")
 	hc := &http.Client{Jar: c.jar, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	res, err := hc.Do(req)
 	if err != nil {

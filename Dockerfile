@@ -13,20 +13,20 @@ COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
 COPY --from=web /backend/internal/web/dist ./internal/web/dist
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gradly .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gradely .
 
 # 3. Tiny runtime image. The entrypoint fixes ownership of the data volume, then drops root.
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates tzdata su-exec \
-    && adduser -D -u 10001 gradly \
-    && mkdir /data && chown gradly:gradly /data
-COPY --from=build /out/gradly /usr/local/bin/gradly
+    && adduser -D -u 10001 gradely \
+    && mkdir /data && chown gradely:gradely /data
+COPY --from=build /out/gradely /usr/local/bin/gradely
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENV GRADLY_ADDR=:8080 \
-    GRADLY_DATA_DIR=/data \
-    GRADLY_SECURE_COOKIES=true
+ENV GRADELY_ADDR=:8080 \
+    GRADELY_DATA_DIR=/data \
+    GRADELY_SECURE_COOKIES=true
 VOLUME /data
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

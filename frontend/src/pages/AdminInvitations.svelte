@@ -77,12 +77,12 @@
     })[r.status] ?? 'Expires ' + date(r.expiresAt);
 </script>
 
-<svelte:head><title>Invitations · Gradly</title></svelte:head>
+<svelte:head><title>Invitations · Gradely</title></svelte:head>
 
 <div class="page-head">
   <div>
     <h1>Invitations</h1>
-    <p class="muted">Gradly is invitation-only. Links are single-use and expire after seven days.</p>
+    <p class="muted">Gradely is invitation-only. Links are single-use and expire after seven days.</p>
   </div>
 </div>
 

@@ -77,7 +77,7 @@
   }
 </script>
 
-<svelte:head><title>{view?.semester.name ?? 'Semester'} · Gradly</title></svelte:head>
+<svelte:head><title>{view?.semester.name ?? 'Semester'} · Gradely</title></svelte:head>
 
 {#if notFound}
   <EmptyState icon="search" title="Semester not found" text="It may have been deleted.">

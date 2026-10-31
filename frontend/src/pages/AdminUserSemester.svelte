@@ -23,7 +23,7 @@
   });
 </script>
 
-<svelte:head><title>{data?.view.semester.name ?? 'Semester'} · Gradly</title></svelte:head>
+<svelte:head><title>{data?.view.semester.name ?? 'Semester'} · Gradely</title></svelte:head>
 
 {#if notFound}
   <EmptyState icon="search" title="Not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>

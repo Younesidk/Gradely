@@ -32,7 +32,7 @@
   }
 </script>
 
-<svelte:head><title>Sign in · Gradly</title></svelte:head>
+<svelte:head><title>Sign in · Gradely</title></svelte:head>
 
 <h1 class="auth-title">Sign in</h1>
 <p class="muted auth-sub">Use your username or email and password</p>
@@ -57,4 +57,4 @@
   <button type="submit" class="btn btn-primary btn-block" disabled={busy}>Sign in</button>
 </form>
 
-<p class="muted small auth-foot">Gradly is invitation-only. Ask your administrator for an invitation link.</p>
+<p class="muted small auth-foot">Gradely is invitation-only. Ask your administrator for an invitation link.</p>

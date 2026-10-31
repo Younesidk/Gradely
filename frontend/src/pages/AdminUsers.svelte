@@ -46,7 +46,7 @@
   }
 </script>
 
-<svelte:head><title>Users · Gradly</title></svelte:head>
+<svelte:head><title>Users · Gradely</title></svelte:head>
 
 <div class="page-head">
   <div>

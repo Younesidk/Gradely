@@ -45,7 +45,7 @@
   }
 </script>
 
-<svelte:head><title>{detail?.row.userName ?? 'User'} · Gradly</title></svelte:head>
+<svelte:head><title>{detail?.row.userName ?? 'User'} · Gradely</title></svelte:head>
 
 {#if notFound}
   <EmptyState icon="search" title="User not found"><a class="btn btn-primary" href="/admin/users">Back to users</a></EmptyState>

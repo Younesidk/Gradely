@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	sessionCookie      = "gradly_session"
+	sessionCookie      = "gradely_session"
 	rememberDuration   = 14 * 24 * time.Hour
 	shortSessionLength = 12 * time.Hour
 	maxFailedLogins    = 5
 	lockoutDuration    = 10 * time.Minute
-	userKey            = "gradly.user"
+	userKey            = "gradely.user"
 
 	genericLoginError = "Sign-in failed. Check your username/email and password. If this keeps happening your account may be locked or disabled."
 	invalidInvitation = "This invitation link is invalid, has expired or was already used."
